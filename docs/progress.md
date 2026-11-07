@@ -7,7 +7,7 @@
 | 0 — Pey documental (G0-D) | Documentación revisada | `docs/pey-capabilities.md`; `docs/pey-validation.md` | Sin pruebas autenticadas |
 | 0 — Pey operativo (G0-R) | NO INICIADO | — | credenciales, cuenta ACTIVE, pagador y consentimiento |
 | 1 — Core (G1) | APROBADO | 47 tests; typecheck sin errores | Ninguno para G1 |
-| 2 — API/DB (G2) | NO INICIADA | — | — |
+| 2 — API/DB (G2) | APROBADO | 72 tests, typecheck, 3 migraciones y demo HTTP | Local, un proceso; sin pagos |
 | 3 — Mock/conciliación (G3) | NO INICIADA | — | — |
 | 4 — Pey real (G4) | NO INICIADA | — | G0-R pendiente |
 | 5 — OpenAI (G5) | NO INICIADA | — | — |
@@ -34,3 +34,17 @@ Codex debe anexar para cada gate: fecha, archivos modificados, comandos ejecutad
 - G1 aprobado. No iniciar Fase 2 en esta entrega. No existen HTTP, DB, proveedores mock/reales, OpenAI ni frontend.
 - Riesgo pendiente: idempotencia durable, concurrencia, firma y conciliación requieren G2/G3/G4; pruebas unitarias no demuestran operación bancaria. No se usaron credenciales ni se generaron cobros.
 - G0-R sigue bloqueado por habilitación/cuenta/pagador y autorización financiera explícita; no impide aprobar el dominio G1.
+
+## Ejecución 2026-11-07 — Fase 2 / G2
+
+- Autorización: usuario indicó avanzar tras definir Fase 2. Base local `a303c2f` (G1); implementación G2 registrada en el siguiente commit, consultar historial por mensaje `feat(api): complete G2 transactional API and persistence`.
+- Entregables: `apps/api` (Fastify, auth por actor, servicio transaccional y servidor loopback), `packages/contracts` (Zod), `packages/database` (Prisma/SQLite, 19 modelos, tres migraciones, seed no destructivo, unidad de trabajo), scripts de migración/demo; roadmap, AGENTS, arquitectura y contratos actualizados.
+- Operaciones: crear/consultar intención, listar/evaluar ofertas, reservar propuesta, aprobar orden ligada a hash, consultar orden/eventos y listar órdenes del comercio. No hay endpoints de cobro o preparación.
+- Persistencia atómica: orden/snapshot/consentimiento/auditoría/outbox interno/respuesta idempotente. Duplicados sobreviven al reinicio; payload distinto genera 409. Una orden por intención; concurrencia sobre propuestas alternativas produce 201/409 sin duplicar compra.
+- Integridad: unicidad de slot activo de intento por orden, recursos por proveedor/tipo/id y transacciones por proveedor/id; recurso permite múltiples transacciones. Triggers impiden actualizar snapshot/consentimiento y alterar/borrar auditoría. Tests de pagos son solo inserts sintéticos para probar constraints, no gateway mock.
+- Comandos reales aprobados: `pnpm install --frozen-lockfile`; `pnpm db:generate`; `pnpm db:migrate` (3 migraciones aplicadas de forma incremental, sin reset); `pnpm db:seed`; `pnpm typecheck` (salida 0); `pnpm test` (**72/72**, 47 core + 25 integración); `pnpm demo` (HTTP real loopback, repetición, reinicio, cuatro eventos, cero intentos financieros); `git diff --check`.
+- Pruebas adversas: suplantación mediante body; acceso ajeno de compradores/comercios; duplicados simultáneos; stock compartido; timeout/UNKNOWN del core; monto $1,200 rechazado; precio/beneficiario/teléfono/versión/merchant/cuenta cambiados; reserva vencida; rollback; evidencia inmutable; seed repetido; lifecycle CLI y rechazo de segunda instancia.
+- Incidencias resueltas: primera instalación bloqueada por red del entorno; instalación posterior autorizada y completada. Prisma no resolvía cliente por disposición pnpm: CLI y cliente instalados juntos en paquete database. Engine de migraciones fallaba al crear archivo ausente: wrapper crea archivo vacío 0600 sin truncar. Primeras 19 pruebas de integración fallaron por ese arranque, luego 19/19, 23/23 y finalmente 25/25 tras agregar restricciones y ciclo del servidor. No se ocultan fallos como éxitos de integración bancaria.
+- Privacidad: tokens fuera del repo y teléfonos demo sintéticos; orden/eventos/outbox no exponen teléfono, texto libre ni datos bancarios. HTTP/Prisma sin logs. DB local no cifrada; no apto para datos reales/producción.
+- G2 aprobado; G3 no iniciado. No frontend, OpenAI, llamadas pey, webhooks operativos, envío de pagos ni credenciales reales. No se publicó a remoto.
+- Bloqueos para G2: ninguno. Límites: SQLite local un proceso, seed/CLI con servidor detenido, lock residual tras cierre forzado se revisa manualmente, auth solo demo, listados limitados a 100 sin paginación todavía. Outbox no despachado. Próximo gate G3 implementa mock explícito, conciliación y despacho idempotente; G0-R sigue pendiente para pagos reales.

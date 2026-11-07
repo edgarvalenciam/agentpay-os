@@ -1,0 +1,246 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Buyer {
+  id          String           @id
+  phoneNumber String
+  intents     PurchaseIntent[]
+  orders      Order[]
+}
+
+model Merchant {
+  id         String                   @id
+  status     String
+  canFulfill Boolean
+  accounts   MerchantPaymentAccount[]
+  products   Product[]
+  offers     Offer[]
+  orders     Order[]
+}
+
+model MerchantPaymentAccount {
+  id                     String   @id
+  merchantId             String
+  merchant               Merchant @relation(fields: [merchantId], references: [id])
+  provider               String
+  providerBankAccountId  String?
+  codiStatus             String
+  beneficiaryDisplayName String
+  offers                 Offer[]
+
+  @@unique([provider, providerBankAccountId])
+}
+
+model Product {
+  id           String        @id
+  merchantId   String
+  merchant     Merchant      @relation(fields: [merchantId], references: [id])
+  category     String
+  unit         String
+  stock        Int
+  offers       Offer[]
+  reservations Reservation[]
+}
+
+model Offer {
+  id                   String                 @id
+  version              Int
+  merchantId           String
+  merchant             Merchant               @relation(fields: [merchantId], references: [id])
+  productId            String
+  product              Product                @relation(fields: [productId], references: [id])
+  category             String
+  quantity             Int
+  unit                 String
+  amountMinor          Int
+  currency             String
+  deliveryAt           DateTime?
+  validUntil           DateTime
+  beneficiaryAccountId String
+  account              MerchantPaymentAccount @relation(fields: [beneficiaryAccountId], references: [id])
+  proposals            Proposal[]
+}
+
+model PurchaseIntent {
+  id        String     @id
+  buyerId   String
+  buyer     Buyer      @relation(fields: [buyerId], references: [id])
+  version   Int
+  data      String
+  proposals Proposal[]
+  order     Order?
+}
+
+model Proposal {
+  id           String            @id
+  intentId     String
+  intent       PurchaseIntent    @relation(fields: [intentId], references: [id])
+  offerId      String
+  offer        Offer             @relation(fields: [offerId], references: [id])
+  orderId      String            @unique
+  snapshot     String
+  snapshotHash String
+  createdAt    DateTime
+  reservation  Reservation?
+  evaluation   PolicyEvaluation?
+  order        Order?
+}
+
+model Reservation {
+  id           String   @id
+  proposalId   String   @unique
+  proposal     Proposal @relation(fields: [proposalId], references: [id])
+  productId    String
+  product      Product  @relation(fields: [productId], references: [id])
+  orderId      String   @unique
+  offerVersion Int
+  quantity     Int
+  status       String
+  validUntil   DateTime
+  order        Order?
+
+  @@index([productId, status, validUntil])
+}
+
+model PolicyEvaluation {
+  id         String   @id
+  proposalId String   @unique
+  proposal   Proposal @relation(fields: [proposalId], references: [id])
+  result     String
+  createdAt  DateTime
+}
+
+model Order {
+  id            String           @id
+  buyerId       String
+  buyer         Buyer            @relation(fields: [buyerId], references: [id])
+  merchantId    String
+  merchant      Merchant         @relation(fields: [merchantId], references: [id])
+  intentId      String           @unique
+  intent        PurchaseIntent   @relation(fields: [intentId], references: [id])
+  proposalId    String           @unique
+  proposal      Proposal         @relation(fields: [proposalId], references: [id])
+  reservationId String           @unique
+  reservation   Reservation      @relation(fields: [reservationId], references: [id])
+  status        String
+  createdAt     DateTime
+  snapshot      OrderSnapshot?
+  consent       ConsentRecord?
+  attempts      PaymentAttempt[]
+  events        AuditEvent[]
+  outbox        OutboxEvent[]
+}
+
+model OrderSnapshot {
+  orderId String @id
+  order   Order  @relation(fields: [orderId], references: [id])
+  version Int
+  hash    String
+  data    String
+}
+
+model ConsentRecord {
+  id           String   @id
+  orderId      String   @unique
+  order        Order    @relation(fields: [orderId], references: [id])
+  actorId      String
+  snapshotHash String
+  acceptedAt   DateTime
+  data         String
+}
+
+model IdempotencyRecord {
+  id          String   @id
+  actorId     String
+  route       String
+  key         String
+  requestHash String
+  response    String
+  statusCode  Int
+  createdAt   DateTime
+
+  @@unique([actorId, route, key])
+}
+
+model AuditEvent {
+  id        String   @id
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id])
+  actorId   String
+  type      String
+  data      String
+  createdAt DateTime
+
+  @@index([orderId, createdAt])
+}
+
+model OutboxEvent {
+  id        String   @id
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id])
+  type      String
+  payload   String
+  status    String   @default("PENDING")
+  createdAt DateTime
+
+  @@index([status, createdAt])
+}
+
+model PaymentAttempt {
+  id                   String             @id
+  orderId              String
+  order                Order              @relation(fields: [orderId], references: [id])
+  method               String
+  provider             String
+  requestedAmountMinor Int
+  currency             String
+  status               String
+  activeSlot           String?            @unique
+  idempotencyKey       String             @unique
+  createdAt            DateTime
+  resources            ProviderResource[]
+  events               PaymentEvent[]
+}
+
+model ProviderResource {
+  id           String                @id
+  attemptId    String
+  attempt      PaymentAttempt        @relation(fields: [attemptId], references: [id])
+  provider     String
+  resourceType String
+  resourceId   String
+  transactions ProviderTransaction[]
+
+  @@unique([provider, resourceType, resourceId])
+}
+
+model ProviderTransaction {
+  id            String           @id
+  resourceId    String
+  resource      ProviderResource @relation(fields: [resourceId], references: [id])
+  provider      String
+  transactionId String
+  amountMinor   Int
+  currency      String
+  status        String
+
+  @@unique([provider, transactionId])
+}
+
+model PaymentEvent {
+  id          String         @id
+  attemptId   String
+  attempt     PaymentAttempt @relation(fields: [attemptId], references: [id])
+  provider    String
+  deliveryId  String
+  payloadHash String
+  createdAt   DateTime
+
+  @@unique([provider, deliveryId])
+}

@@ -54,3 +54,9 @@
 - Idempotencia en G1 es una decisión pura sobre registros suministrados; atomicidad, índices únicos y persistencia pertenecen a G2/G3.
 - Las transiciones financieras del core requieren evidencia de un servicio confiable futuro: no exponerlas directamente a agentes o clientes.
 - Ver correcciones documentales en `docs/pey-review-2026-11-07.md`, incluyendo `partial`, `metadata.externalMetadata` e identificadores `id`/`transactionId`.
+
+## Autorización y estado de Fase 2 — 2026-11-07
+
+El usuario indicó «avacemos o que hace falta?» tras definir Fase 2; autoriza implementar G2. Las restricciones de primera sesión/G1 no impiden esta fase posterior. Se permiten API, Prisma y SQLite locales; se mantienen prohibidos frontend, llamadas financieras y credenciales reales.
+
+G2 implementa API/auth local, reservas transaccionales, persistencia, idempotencia, auditoría/outbox interno y tablas preparatorias de pagos. No iniciar G3 ni proveedores simulados sin nueva instrucción. Ver `docs/api-contracts.md`, `docs/progress.md` y ADR-009/010. Los logs HTTP y Prisma permanecen desactivados para no filtrar cuerpos, tokens ni PII.

@@ -2,7 +2,7 @@
 
 **Versión:** 1.2 — inventario integral de API pey y plan de implementación (07-nov-2026)  
 **Fecha:** 2026-11-07  
-**Estado:** G1 implementado y verificado; G0-D revisado; G0-R y Fases 2–7 pendientes
+**Estado:** G1/G2 implementados y verificados; G0-D revisado; G0-R y Fases 3–7 pendientes
 **Objetivo:** Construir y demostrar una compra iniciada por IA, validada por políticas deterministas y pagada mediante CoDi Push a través de pey, con confirmación financiera verificable.
 
 > **Principio:** El agente propone; el core valida; el comprador solicita el cobro y autoriza en su banco; el proveedor financiero comunica el resultado; AgentPay concilia; el comercio cumple la orden.
@@ -61,7 +61,7 @@
 |---|---|---|---|
 | 0 | Factibilidad pey/CoDi y contratos | Documental verificado; operativo pendiente | G0-D / G0-R |
 | 1 | Dominio y motor de políticas | Completo: 47 tests y typecheck | G1 |
-| 2 | API, persistencia y órdenes | ☐ Pendiente | G2 |
+| 2 | API, persistencia y órdenes | Completo: API local, DB, reservas y auditoría | G2 |
 | 3 | Orquestación de pagos simulada y conciliación | ☐ Pendiente | G3 |
 | 4 | Integración real pey/CoDi | ☐ Pendiente | G4 |
 | 5 | Agente OpenAI | ☐ Pendiente | G5 |
@@ -310,17 +310,17 @@ GET  /health
 
 ### Checklist
 
-- [ ] Configurar Fastify, Prisma, SQLite y migraciones.
-- [ ] Crear repositorios e interfaces desacopladas.
-- [ ] Implementar reserva comercial controlada: `reserveOffer()` antes del cobro, `validUntil` persistido y liberación por vencimiento; el stub del comercio demo debe responder de forma determinista.
-- [ ] Implementar endpoints con validación Zod.
-- [ ] Implementar control básico de acceso y aislamiento comprador/comercio: un comprador no consulta órdenes ajenas y un comercio solo ve las propias; autenticar incluso si demo usa usuarios seed.
-- [ ] Para demo, fijar por configuración los usuarios y teléfonos preenrolados. En producto real exigir verificación de posesión del teléfono, consentimiento y medidas anti-spam (rate limiting).
-- [ ] Implementar `Idempotency-Key` por actor/ruta/cuerpo en creación de orden y cobro; mismo payload = mismo resultado, payload distinto = `409`.
-- [ ] Persistir auditoría de decisiones, consentimiento comercial, reserva, transiciones y eventos outbox.
-- [ ] Agregar seed reproducible de comercio, productos y ofertas.
-- [ ] Crear colección HTTP o scripts de ejemplo.
-- [ ] Probar reinicio de API y recuperación del estado.
+- [x] Configurar Fastify, Prisma, SQLite y migraciones.
+- [x] Crear repositorios e interfaces desacopladas.
+- [x] Implementar reserva comercial controlada: `reserveOffer()` antes del cobro, `validUntil` persistido y liberación por vencimiento; el stub del comercio demo debe responder de forma determinista.
+- [x] Implementar endpoints con validación Zod.
+- [x] Implementar control básico de acceso y aislamiento comprador/comercio: un comprador no consulta órdenes ajenas y un comercio solo ve las propias; autenticar incluso si demo usa usuarios seed.
+- [x] Para demo, fijar por configuración los usuarios y teléfonos preenrolados. En producto real exigir verificación de posesión del teléfono, consentimiento y medidas anti-spam (rate limiting).
+- [x] Implementar `Idempotency-Key` por actor/ruta/cuerpo en creación de intención/propuesta/orden; mismo payload = mismo resultado, payload distinto = `409`. Ruta de cobro pendiente de G3, usa esta misma infraestructura.
+- [x] Persistir auditoría de decisiones, consentimiento comercial, reserva, transiciones y eventos outbox.
+- [x] Agregar seed reproducible de comercio, productos y ofertas.
+- [x] Crear colección HTTP o scripts de ejemplo.
+- [x] Probar reinicio de API y recuperación del estado.
 
 ### Gate G2
 
@@ -717,3 +717,7 @@ Si durante una fase surge un cambio de arquitectura o alcance, registrar en `doc
 Core implementado y verificado sin proveedores, HTTP, DB ni frontend. Ver evidencia en `docs/progress.md`. Los estados internos de pagos no son estados publicados por pey. G2 y G3 siguen pendientes: no hay garantías persistentes de idempotencia o conciliación operativa.
 
 Correcciones a la revisión original v1.2: `GET /payment-link/{id}` incluye `partial`; el webhook de link publica solo `pending/processing/paid`. Los metadatos del recurso se devuelven bajo `metadata.externalMetadata` en las transacciones; los de un link consultado son un mapa directo. Ver `docs/pey-review-2026-11-07.md`.
+
+## Cierre G2 — 2026-11-07
+
+API local y SQLite/Prisma implementados. 72 pruebas aprobadas (47 core + 25 integración); migraciones y demo HTTP con reinicio verificadas. Auth local por actor, reserva transaccional, aprobación ligada al hash y auditoría/outbox persistentes. No se envían cobros ni notificaciones al comercio. Ver `docs/progress.md` y `docs/api-contracts.md` para evidencias y límites. G3 no iniciado.

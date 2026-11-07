@@ -51,3 +51,27 @@
 - Idempotencia como función pura en G1 por petición original del usuario; persistencia y exclusión mutua quedan en G2/G3. Se usa la nomenclatura de estados detallada en contratos v1.2, sobre los nombres alternativos del plan.
 - Estados y evidencia financiera: reducers confiables de dominio; firma, deduplicación duradera y conciliación pertenecen a G3/G4. Cumplimiento separado exige CONFIRMED.
 - La revisión oficial corrige la metadata y `partial`; no incorpora nuevas capacidades por inferencia.
+
+## ADR-009 — Persistencia y exclusión mutua G2
+- Fecha: 2026-11-07. Estado: implementada.
+- Prisma 6.19.3 fijado con SQLite local; cliente y CLI instalados en el mismo paquete de DB para resolución correcta con pnpm. No se migra a Prisma 7 durante este gate.
+- Unidad de trabajo transaccional con cola por instancia, un proceso y una Database por archivo; CLI server tiene lock exclusivo por ruta. No hay garantía multiproceso por parte de la cola; índices/foreign keys/triggers son defensa adicional.
+- Reserva de producto compartida entre ofertas: 30 minutos, consulta de disponibilidad descuenta reservas activas. Expiración se aplica al escribir o por mantenimiento explícito; no hay worker en G2.
+- Orden, snapshot, consentimiento, auditoría, outbox interno e idempotencia se escriben atómicamente. Replays devuelven resultado histórico; mismo proposalId con nueva clave no crea otra orden.
+- Slots activos de intentos deben ser orderId y únicos; UNKNOWN y excepción conservan slot hasta resolución. No se crean intentos desde HTTP en G2.
+- Snapshots/consentimientos no se actualizan; audit append-only por triggers de migración. Outbox se almacena, no se despacha.
+- Cliente Prisma se genera explícitamente con `pnpm db:generate` después de instalar, evitando depender de políticas de lifecycle de cada entorno. Script de migración crea archivo vacío modo 0600 si falta, sin truncar, antes de ejecutar migrate deploy: evita fallo del schema engine observado al crear DB ausente.
+
+## ADR-010 — Identidad y aprobación comercial G2
+- Fecha: 2026-11-07. Estado: implementada solo para demo local.
+- Tokens aleatorios distintos por actor configurados fuera del repo; identidad no aceptada en payload. Servidor solo loopback, rechaza producción y banderas de proveedor real. No se afirma identidad o verificación de teléfono de producción.
+- Propuesta persistida con reserva y hash; aprobación explícita con hash presentado. Servicio vuelve a cargar intención, comercio, cuenta, teléfono, oferta y reserva actuales antes de crear orden.
+- Cambios comerciales invalidan consentimiento; stock se revalida en vivo pero su valor histórico en snapshot no cambia por otras reservas.
+- `POST /evaluate` no reserva inventario y etiqueta reserva hipotética. Solo `POST /proposals` persiste reserva del comercio demo.
+- Las órdenes quedan APPROVED, nunca PAID. No se expone reducer de estados ni endpoints de cobro/preparación. Sus intentos y contratos se implementan en G3.
+- DB local contiene snapshot/teléfono sin cifrado, archivo privado; respuestas de orden, auditoría y outbox omiten PII. Auth pública, cifrado/retención y rate limiting antes de producción.
+
+## ADR-011 — Una compra por intención
+- Fecha: 2026-11-07. Estado: implementada en G2.
+- Una intención representa una compra; puede tener propuestas alternativas pero solo una orden aprobada. Índice único Order.intentId y revalidación transaccional evitan dos aprobaciones simultáneas incluso con distintas claves/propuestas.
+- Al aprobar, liberar reservas de propuestas alternativas de esa intención. Para repetir compra se crea una intención nueva. La prueba concurrente demuestra una respuesta 201, una 409 y una sola reserva activa.

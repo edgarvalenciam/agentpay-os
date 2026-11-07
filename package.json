@@ -4,11 +4,20 @@
   "packageManager": "pnpm@11.25.0",
   "scripts": {
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "db:generate": "prisma generate --schema packages/database/prisma/schema.prisma",
+    "db:migrate": "tsx scripts/migrate.ts",
+    "db:seed": "tsx packages/database/src/seed-cli.ts",
+    "dev:api": "tsx apps/api/src/server.ts",
+    "demo": "tsx scripts/demo.ts"
   },
   "devDependencies": {
     "typescript": "5.9.3",
     "vitest": "3.2.4",
-    "@types/node": "22.19.1"
-  }
+    "@types/node": "22.19.1",
+    "prisma": "6.19.3",
+    "tsx": "4.20.6",
+    "@prisma/client": "6.19.3"
+  },
+  "type": "module"
 }

@@ -17,3 +17,11 @@ Core TypeScript estricto; Zod valida entradas comerciales. `models.ts` define in
 ## Límites de integración futura
 
 Las entradas representan hechos suministrados por un backend confiable, no afirmaciones del modelo o cliente. Al solicitar cobro se deben cargar datos actuales de cuenta, intención, reserva y oferta, comparar con snapshot y revalidar en una transacción; un snapshot no prueba disponibilidad actual. La firma comercial vincula contenido, no autentica al usuario: autenticación y persistencia son G2. No registrar snapshots con teléfonos en logs; este paquete no genera logs.
+
+## Extensión G2
+
+`packages/contracts` mantiene schemas de solicitudes. `packages/database` contiene Prisma, migraciones, seed y puerto UnitOfWork; core conserva independencia. `apps/api` contiene adaptador Fastify y servicio comercial que usa core y unidad de trabajo. `scripts/demo.ts` prueba HTTP real sobre loopback, DB temporal y recuperación tras reinicio. `docs/api-contracts.md` es el contrato operativo de esta fase.
+
+El servicio serializa el flujo de idempotencia → disponibilidad → reserva/validación → persistencia de evidencia dentro de una transacción SQLite. Las consultas también usan esa unidad de trabajo para no competir con escrituras del proceso local. El servidor impide dos instancias sobre el mismo archivo con lock. No iniciar más de una Database activa sobre un archivo desde otros scripts; detener API para migrar/seed. Migrar a PostgreSQL y control transaccional apropiado antes de operación multinstancia.
+
+Pagos, firma, conciliación y despacho de outbox no están implementados. Las tablas de intentos/recursos/transacciones/eventos existen para G3; sus fixtures de integración únicamente prueban unicidad y cardinalidad.

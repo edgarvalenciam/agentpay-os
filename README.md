@@ -1,6 +1,6 @@
 # AgentPay OS — Codex Starter v1.2
 
-**Estado:** Fase 1 / G1 implementada y verificada: core puro, 47 pruebas y TypeScript estricto. Fase 0 documental revisada; validación bancaria pendiente. Sin frontend, credenciales ni pagos. Fecha: 2026-11-07.
+**Estado:** G1 y G2 implementados: core, API local, persistencia SQLite/Prisma, reservas, consentimiento y auditoría. 72 pruebas y TypeScript estricto aprobados. Sin frontend ni integración financiera. Fecha: 2026-11-07.
 
 ## Objetivo
 
@@ -8,11 +8,11 @@ Infraestructura B2B2C para comercio iniciado por IA, validado por políticas det
 
 ## Primeros pasos
 
-1. Descomprime el ZIP y abre **esta carpeta** como workspace/proyecto en Codex Desktop (o CLI de Codex).
-2. Lee `AGENTS.md` y `AGENTPAY_MVP_IMPLEMENTATION.md`.
-3. Pega en Codex el contenido completo de `prompts/START_CODEX.md`.
-4. Permite que termine exclusivamente Fase 1 / Gate G1: motor de políticas y dominio en TypeScript estricto con pruebas. Fase 0 documental se puede hacer en paralelo.
-5. Revisa `docs/progress.md`, `docs/decisions.md` y los resultados **reales** de los tests. Avanza una fase únicamente cuando autorices el siguiente gate.
+1. Abre esta carpeta en Codex y lee `AGENTS.md` y `docs/progress.md`.
+2. G1 y G2 ya están implementados. Ejecuta los comandos de reproducción de abajo.
+3. `pnpm demo` demuestra API y persistencia sin banco ni frontend.
+4. El prompt `prompts/START_CODEX.md` corresponde al arranque histórico de G1; no es la tarea siguiente.
+5. Siguiente gate: G3, pagos simulados y conciliación. No activar pagos reales ni producción desde este paquete.
 
 ## Archivos
 
@@ -50,8 +50,23 @@ Requisitos: Node.js 22+ y pnpm 11.25.0. Desde esta carpeta:
 
 ```sh
 pnpm install --frozen-lockfile
+pnpm db:generate
 pnpm test
 pnpm typecheck
 ```
 
 El paquete `@agentpay/core` está en `packages/core/src`. Las pruebas usan fixtures ficticios y no requieren variables de entorno. No existe servidor ni integración financiera. Ver `docs/architecture.md` y `docs/progress.md`.
+
+## Fase 2 — API persistente
+
+```sh
+pnpm install --frozen-lockfile
+pnpm db:generate
+pnpm test
+pnpm typecheck
+pnpm demo
+```
+
+`pnpm demo` demuestra por HTTP local una orden de $850, replay idempotente, reinicio y auditoría en una DB temporal. No usa credenciales reales ni envía pagos. Para servidor persistente y contratos ver `docs/api-contracts.md`. `pnpm db:migrate` aplica migraciones sin resetear; `pnpm db:seed` conserva datos existentes. Generar el cliente Prisma con `pnpm db:generate` después de instalar o cambiar el schema.
+
+G2 es local y de un proceso: autenticación demo por tokens de operador y escucha exclusiva en loopback. No es un despliegue productivo. Siguiente gate: G3, pagos simulados y conciliación, requiere nueva instrucción.
