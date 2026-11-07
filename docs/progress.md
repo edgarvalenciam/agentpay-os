@@ -9,7 +9,7 @@
 | 1 — Core (G1) | APROBADO | 47 tests; typecheck sin errores | Ninguno para G1 |
 | 2 — API/DB (G2) | APROBADO | 72 tests, typecheck, 3 migraciones y demo HTTP | Local, un proceso; sin pagos |
 | 3 — Mock/conciliación (G3) | APROBADO | 122 tests, typecheck, demo HTTP SIMULADO | No valida integración bancaria |
-| 4 — Pey real (G4) | PARCIAL: receptor + URL | 137 tests; HTTPS verificado | Falta secreto, transporte y conciliación real; sin cobro |
+| 4 — Pey real (G4) | PARCIAL: receptor + URL | 137 tests; HTTPS verificado | Falta transporte, conciliación y verificación bancaria; sin cobro |
 | 5 — OpenAI (G5) | NO INICIADA | — | — |
 | 6 — Frontend (G6) | NO INICIADA | — | — |
 | 7 — E2E/demo (G7) | NO INICIADA | — | — |
@@ -77,3 +77,7 @@ Codex debe anexar para cada gate: fecha, archivos modificados, comandos ejecutad
 - Commit identificable por mensaje feat(webhooks): add isolated pey receiver and temporary URL tooling. Sin publicación de código a remoto.
 
 - Incidencia operativa resuelta: restricciones del entorno impedían inspeccionar/señalizar procesos previos (EPERM). El launcher ahora trata EPERM como proceso existente en vez de asumir que terminó; no relanza una sesión incompleta. Se verificaron los procesos propios con permisos adecuados, se cerró un túnel duplicado y se conservó un único receptor/túnel con estado corregido. Pruebas HTTPS posteriores y reuso de URL aprobados. Down no borra estado si no puede verificar o detener procesos.
+
+## Confirmación de configuración — 2026-11-07
+
+El usuario completó la entrada local del secreto. Verificación por GET /health local y por URL HTTPS pública: 200, status=ready, realPaymentsEnabled=false. Esto acredita que el receptor pudo cargar la configuración de firma; no acredita todavía una entrega auténtica de pey ni conciliación financiera. No se leyó ni imprimió el secreto, no se enviaron eventos financieros ni se generaron cobros. Continúan pendientes el adaptador de envío, la conciliación real, configuración local de API key/beneficiario y la definición concreta de monto antes de la prueba bancaria.
