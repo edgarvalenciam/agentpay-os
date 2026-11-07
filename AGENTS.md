@@ -1,0 +1,49 @@
+# AGENTS.md — Reglas persistentes de AgentPay OS para Codex
+
+## Contexto, orden de lectura y prioridades
+
+1. Lee `AGENTPAY_MVP_IMPLEMENTATION.md` (v1.2), `docs/pey-capabilities.md`, `docs/pey-adapter-contracts.md` y `tasks/01-core.md`.
+2. Lee `docs/decisions.md`, `docs/progress.md` y `docs/pey-validation.md` para no repetir ni inventar avances.
+3. Haz el trabajo **por fases y gates**. En la primera sesión SOLO implementar Fase 1 y registrar hallazgos de Fase 0 sin llamadas financieras.
+4. El producto valida compras iniciadas por IA; el agente **no puede efectuar pagos**. El usuario revisa la orden, solicita el cobro y autoriza en la app bancaria.
+5. Mantén frontend **definido en contratos** pero NO lo desarrolles antes de G5/G6.
+
+## Límites de la primera sesión
+
+- Permitido: estructura monorepo TypeScript/pnpm, `packages/core`, modelos, Zod, motor de políticas, máquina de estados, test fixtures, Vitest y documentación de progreso.
+- NO implementes endpoints HTTP, Prisma, OpenAI SDK, pey SDK, webhooks operativos, frontend ni pagos mock/real durante Fase 1.
+- No invoques `https://api.pey.mx` ni uses una API key real, aunque estuviera disponible. No enviar solicitudes CoDi reales sin consentimiento explícito adicional.
+- **Detente tras G1**. No interpretes que hay que implementar todas las fases porque existen tareas 02–07.
+
+## Invariantes de seguridad y consistencia
+
+- `packages/core` es puro; no importa Fastify, Next.js, Prisma, OpenAI ni implementaciones de pey.
+- Guardar dinero en centavos enteros (`amountMinor`), MXN y aritmética exacta. El adaptador transforma a pesos decimales sin tolerancias silenciosas.
+- Política elegible ≠ comprador aprobó el pedido ≠ solicitud enviada ≠ pago confirmado ≠ entrega realizada.
+- Orden aprobada: snapshot inmutable de artículos, importe, comercio, cuenta beneficiaria, entrega y teléfono destino; cambios requieren nueva evaluación y consentimiento.
+- Disponibilidad, vigencia, reserva y capacidad del comercio deben ser explícitas, nunca inventadas por IA.
+- `PaymentMethod`: `CODI_PUSH`, `CODI_QR`, `PAYMENT_LINK`. Diseña el modelo **sin implementar los tres** en G1. P0 = CoDi Push.
+- Un QR puede tener múltiples pagos y admitir `amount=0`; no utilizar QR de importe abierto para una orden de precio cerrado.
+- Payment Link puede tener fees/tips; para precio fijo `hasTip=false`, y no mutar una orden aprobada a través de `POST /payment-link/update`.
+- El evento `bank.account.updated` solo publica `ACTIVE`; para otros estados se consulta API.
+- No inventes capacidades no documentadas: reembolsos automáticos, payouts, escrow, split, pagos CoDi sin autorización bancaria, estados bancarios de entrega/lectura/rechazo.
+- Deduplicar webhook tanto por `webhook-id` como por transacción/efecto y usar raw body + secreto Standard Webhooks. Mantener outbox persistente en la fase DB.
+- Crear `PaymentAttempt` antes de llamar a proveedores; ante timeout de envío, `SUBMISSION_UNKNOWN`: nunca reintentar POST de manera automática sin idempotencia upstream demostrada.
+- No exponer ni guardar credenciales, teléfonos, RFC o CLABE en logs/auditoría.
+- La API de pey permite indicar `bankAccountId` en CoDi, pero **no valida por sí sola autorización legal para operar multi-comercio**.
+- `PAYMENT_PROVIDER=mock` y `ALLOW_REAL_PAYMENTS=false` por defecto, incluidos los ejemplos.
+
+## Ingeniería
+
+- TypeScript strict, pnpm workspace, Zod, Vitest; capas separadas: core, contracts, integrations, database, apps.
+- Política como función pura evaluable contra fixtures; errores tipados y estados explícitos.
+- Fechas relativas resueltas usando timezone/fecha local del comprador explícitos.
+- Crear pruebas de casos adversos y regresión, no solo happy path.
+- Documentar en `docs/decisions.md` cualquier ambigüedad resuelta sin modificar silenciosamente producto.
+
+## Gate de cierre
+
+1. Ejecutar comandos reales: instalación, tests, typecheck (si existen). No afirmar éxitos no observados.
+2. Actualizar `docs/progress.md` con fecha, archivos, comandos, resultados, evidencias y bloqueos.
+3. Mostrar un resumen de cambios de código y una lista corta de riesgos restantes.
+4. Declarar G1 como aprobado solo si se cumplieron todos sus criterios y **detenerse**.
