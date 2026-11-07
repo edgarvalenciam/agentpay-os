@@ -102,3 +102,7 @@ Usuario completó configurador privado. Se verificaron únicamente indicadores: 
 ## Revisión de IDs y avance sin banco — 2026-11-07
 
 Usuario solicitó buscar documentación y continuar sin Ramón. Se revisó OpenAPI: apiKeyId no es parámetro de envío; bankAccountId es opcional con cuenta vinculada. Se distingue la política conservadora del proyecto del requisito real del proveedor. Se preparó pey:check-key para GET /transaction/api-key sin IDs, con descarte de respuesta, timeout, sin redirecciones/reintentos ni mutaciones. Ocho pruebas nuevas con fixtures y typecheck aprobados. No se utilizó la clave real en red. La inspección local de bandeja fue de solo lectura, sin imprimir payloads ni PII. Continúan pendientes IDs/beneficiario o diseño explícito de verificación equivalente; no se rebajaron controles ni se iniciaron G5/frontend.
+
+## Consulta autenticada de solo lectura — 2026-11-07
+
+Usuario autorizó explícitamente «si dale» para una única consulta GET /transaction/api-key con la clave local. Primer arranque bloqueado por EPERM en el IPC de tsx antes de realizar HTTP; tras habilitar acceso de red, pnpm pey:check-key terminó con salida 0: accesoConfirmado=true, autenticacionRechazada=false, cobrosGenerados=0. El comando solo acepta HTTP 200 como acceso confirmado y descarta el cuerpo sin imprimir ni almacenar movimientos. No recupera apiKeyId ni bankAccountId y no demuestra cuenta ACTIVE ni capacidad de recibir CoDi. No hubo POST, cambios de configuración ni solicitudes de pago. Autorización limitada a esta lectura; prueba bancaria sigue pendiente.
