@@ -14,7 +14,8 @@
     "webhook:serve": "tsx apps/api/src/pey-webhook-server.ts",
     "webhook:configure": "tsx scripts/configure-pey-webhook.ts",
     "webhook:up": "tsx scripts/webhook-up.ts",
-    "webhook:down": "tsx scripts/webhook-down.ts"
+    "webhook:down": "tsx scripts/webhook-down.ts",
+    "pey:configure-key": "tsx scripts/configure-pey-api-key.ts"
   },
   "devDependencies": {
     "typescript": "5.9.3",

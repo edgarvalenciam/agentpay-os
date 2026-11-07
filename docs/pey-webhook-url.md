@@ -45,3 +45,7 @@ Los procesos se ejecutan en segundo plano en este Mac. La computadora debe perma
 - G4-R pendiente. No se usó la API key real ni se llamó a api.pey.mx; cero cobros.
 
 Fuentes: [configurar webhooks pey](https://docs.pey.mx/docs/tutorials/getting-started/set-up-webhooks/), [webhook push](https://docs.pey.mx/docs/webhooks/codi/pn/), [Standard Webhooks JavaScript](https://github.com/standard-webhooks/standard-webhooks/tree/main/libraries/javascript), [Quick Tunnels](https://developers.cloudflare.com/tunnel/get-started/quick-tunnels/), [descargas cloudflared](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/downloads/).
+
+## Guardar la API key sin compartirla en el chat
+
+`pnpm pey:configure-key` abre una entrada local oculta y guarda PEY_API_KEY en .env.pey.local con permisos 0600. No recibe argumentos con la key ni la imprime. Conserva el secreto de webhook, clave de cifrado, teléfono y banderas de pago; no contacta a pey, no verifica la key y no activa operaciones financieras. El helper Configurar-API-key-pey.command permite iniciar este paso desde Terminal. Solo pegar el valor de la API key, sin el prefijo Bearer.

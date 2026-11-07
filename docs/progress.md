@@ -81,3 +81,7 @@ Codex debe anexar para cada gate: fecha, archivos modificados, comandos ejecutad
 ## Confirmación de configuración — 2026-11-07
 
 El usuario completó la entrada local del secreto. Verificación por GET /health local y por URL HTTPS pública: 200, status=ready, realPaymentsEnabled=false. Esto acredita que el receptor pudo cargar la configuración de firma; no acredita todavía una entrega auténtica de pey ni conciliación financiera. No se leyó ni imprimió el secreto, no se enviaron eventos financieros ni se generaron cobros. Continúan pendientes el adaptador de envío, la conciliación real, configuración local de API key/beneficiario y la definición concreta de monto antes de la prueba bancaria.
+
+## Configurador privado de API key — 2026-11-07
+
+Usuario solicitó un mecanismo similar al del secreto de webhook. Se agregó pey:configure-key y helper local .command con entrada oculta. Guardado atómico 0600, preservando configuración existente y pagos deshabilitados; sin red y sin imprimir valores. Entrada y guardado privados compartidos con configurador de webhook. Cinco pruebas focalizadas aprobadas y typecheck salida 0. No se ha solicitado ni recibido la API key en el chat; este cambio solo prepara su captura local por el usuario. No valida credenciales contra pey ni realiza cobros.
