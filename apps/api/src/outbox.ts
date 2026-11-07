@@ -13,7 +13,7 @@ export class OutboxDispatcher {
     });
     if(!event)return {processed:false};
     try{
-      if(event.type==='MOCK_ORDER_PAID'||event.type==='MOCK_FULFILLMENT_EXCEPTION'){
+      if(['MOCK_ORDER_PAID','MOCK_FULFILLMENT_EXCEPTION','PEY_ORDER_PAID','PEY_FULFILLMENT_EXCEPTION'].includes(event.type)){
         await this.db.write(async tx=>{
           const order=await tx.order.findUniqueOrThrow({where:{id:event.orderId}});
           const previous=await tx.merchantNotification.findUnique({where:{eventId:event.id}});

@@ -15,7 +15,10 @@
     "webhook:configure": "tsx scripts/configure-pey-webhook.ts",
     "webhook:up": "tsx scripts/webhook-up.ts",
     "webhook:down": "tsx scripts/webhook-down.ts",
-    "pey:configure-key": "tsx scripts/configure-pey-api-key.ts"
+    "pey:configure-key": "tsx scripts/configure-pey-api-key.ts",
+    "pey:configure-account": "tsx scripts/configure-pey-account.ts",
+    "demo:pey": "tsx scripts/demo-pey-contract.ts",
+    "pey:check-account": "tsx scripts/check-pey-account.ts"
   },
   "devDependencies": {
     "typescript": "5.9.3",

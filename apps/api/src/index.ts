@@ -5,11 +5,15 @@ import { ApiError, CommerceService, type Actor } from './service.js';
 import { CreateIntentSchema, ProposeSchema, CreateOrderSchema, EvaluateSchema, IdempotencyKeySchema, RequestPaymentSchema } from '@agentpay/contracts';
 import type { UnitOfWork } from '@agentpay/database';
 import { PaymentService, type MockPaymentOptions } from './payment-service.js';
+import { PeyPaymentService,type PeyPaymentOptions } from './pey-payment-service.js';
+import { PeyInboxProcessor } from './pey-inbox-processor.js';
 import { OutboxDispatcher } from './outbox.js';
 export interface Credential { token:string; actor:Actor }
-export function buildApp(options:{db:UnitOfWork;credentials:Credential[];clock?:()=>string;mockPayments?:MockPaymentOptions}){
+export function buildApp(options:{db:UnitOfWork;credentials:Credential[];clock?:()=>string;mockPayments?:MockPaymentOptions;peyPayments?:PeyPaymentOptions;peyInbox?:{db:UnitOfWork;getEncryptionKey:()=>Promise<Buffer>}}){
   if(!options.credentials.length || options.credentials.some(c=>c.token.length<24) || new Set(options.credentials.map(c=>c.token)).size!==options.credentials.length)throw new Error('UNIQUE_LOCAL_TOKENS_MIN_24_REQUIRED');
-  const mock=options.mockPayments;
+  const mock=options.mockPayments,pey=options.peyPayments;
+  if(mock&&pey)throw new Error('ONE_PAYMENT_PROVIDER_REQUIRED');
+  if(pey&&(process.env.NODE_ENV==='production'||pey.gateway.provider!=='pey'||pey.gateway.environment!=='real'))throw new Error('LOCAL_PEY_PROFILE_REQUIRED');
   if(mock&&(process.env.NODE_ENV==='production'||process.env.ALLOW_REAL_PAYMENTS==='true'||(process.env.PAYMENT_PROVIDER&&process.env.PAYMENT_PROVIDER!=='mock')||mock.gateway.environment!=='mock'||mock.gateway.provider!=='mock'||mock.gateway.method!=='CODI_PUSH'))throw new Error('MOCK_ONLY');
   if(mock&&(mock.webhookSecret.length<32||!mock.apiKeyId.startsWith('mock-')||(mock.controlToken&&(mock.controlToken.length<24||options.credentials.some(c=>c.token===mock.controlToken)))||options.credentials.some(c=>c.token===mock.webhookSecret)||mock.controlToken===mock.webhookSecret))throw new Error('INVALID_MOCK_CONFIGURATION');
   const app=Fastify({logger:false,bodyLimit:16384,disableRequestLogging:true});
@@ -40,7 +44,8 @@ export function buildApp(options:{db:UnitOfWork;credentials:Credential[];clock?:
   const actor=(req:FastifyRequest)=>{const a=actors.get(req);if(!a)throw new ApiError(401,'UNAUTHENTICATED');return a;};
   const params=(req:FastifyRequest)=>z.object({id:z.string().min(1)}).parse(req.params).id;
   const key=(req:FastifyRequest)=>IdempotencyKeySchema.parse(req.headers['idempotency-key']);
-  app.get('/health',async()=>({status:'ok',phase:'G3',paymentsEnabled:false,realPaymentsEnabled:false,mockPaymentsEnabled:Boolean(mock)}));
+  const isRealArmed=()=>Boolean(pey?.gateway.allowRealPayments&&pey.gateway.grant&&Date.parse(pey.gateway.grant.expiresAt)>Date.parse((options.clock??(()=>new Date().toISOString()))()));
+  app.get('/health',async()=>({status:'ok',phase:pey?'G4':'G3',paymentsEnabled:isRealArmed(),realPaymentsEnabled:isRealArmed(),mockPaymentsEnabled:Boolean(mock)}));
   app.post('/v1/intents',async(req,reply)=>{const r=await service.createIntent(actor(req),key(req),CreateIntentSchema.parse(req.body));return reply.code(r.status).send(r.body);});
   app.get('/v1/intents/:id',async req=>service.getIntent(actor(req),params(req)));
   app.get('/v1/intents/:id/offers',async req=>service.listOffers(actor(req),params(req)));
@@ -61,7 +66,7 @@ export function buildApp(options:{db:UnitOfWork;credentials:Credential[];clock?:
     app.post('/v1/test-only/mock-webhook',async req=>{if(!Buffer.isBuffer(req.body))throw new ApiError(415,'RAW_MOCK_EVENT_REQUIRED');return payments.receive(req.body,req.headers);});
     app.get('/v1/merchants/:id/notifications',async req=>{
       const a=actor(req),id=params(req);if(a.role!=='MERCHANT'||a.id!==id)throw new ApiError(403,'MERCHANT_REQUIRED');
-      return options.db.read(async tx=>(await tx.merchantNotification.findMany({where:{merchantId:id},orderBy:[{createdAt:'asc'},{id:'asc'}],take:100})).map(e=>({id:e.id,orderId:e.orderId,type:e.type,environment:'mock',label:'SIMULADO',payload:JSON.parse(e.payload)})));
+      return options.db.read(async tx=>(await tx.merchantNotification.findMany({where:{merchantId:id},orderBy:[{createdAt:'asc'},{id:'asc'}],take:100})).map(e=>({id:e.id,orderId:e.orderId,type:e.type,environment:e.type.startsWith('PEY_')?'real':'mock',label:e.type.startsWith('PEY_')?'REAL':'SIMULADO',payload:JSON.parse(e.payload)})));
     });
     if(mock.controlToken){
       app.post('/v1/test-only/mock-payments/:id/confirm',async req=>{z.object({}).strict().parse(req.body);return payments.simulate(params(req),true);});
@@ -72,6 +77,24 @@ export function buildApp(options:{db:UnitOfWork;credentials:Credential[];clock?:
       if(mock.dispatchIntervalMs<100)throw new Error('INVALID_DISPATCH_INTERVAL');
       let timer:ReturnType<typeof setInterval>|undefined,running:Promise<unknown>|undefined;
       app.addHook('onReady',async()=>{timer=setInterval(()=>{if(!running)running=outbox.drain().catch(()=>undefined).finally(()=>{running=undefined;});},mock.dispatchIntervalMs);timer.unref();});
+      app.addHook('onClose',async()=>{if(timer)clearInterval(timer);await running;});
+    }
+  }
+  if(pey){
+    const clock=options.clock??(()=>new Date().toISOString()),payments=new PeyPaymentService(options.db,clock,pey),outbox=new OutboxDispatcher(options.db,clock);
+    const processor=options.peyInbox?new PeyInboxProcessor(options.peyInbox.db,payments,options.peyInbox.getEncryptionKey,clock):null;
+    app.addHook('onReady',async()=>{await payments.recoverUncertain();});
+    app.post('/v1/orders/:id/payment-requests',async(req,reply)=>{const r=await payments.request(actor(req),params(req),key(req),RequestPaymentSchema.parse(req.body));return reply.code(r.status).send(r.body);});
+    app.get('/v1/orders/:id/payments',async req=>payments.list(actor(req),params(req)));
+    app.post('/v1/orders/:id/reconcile',async req=>{z.object({}).strict().parse(req.body);return payments.poll(actor(req),params(req));});
+    app.get('/v1/merchants/:id/notifications',async req=>{
+      const a=actor(req),id=params(req);if(a.role!=='MERCHANT'||a.id!==id)throw new ApiError(403,'MERCHANT_REQUIRED');
+      return options.db.read(async tx=>(await tx.merchantNotification.findMany({where:{merchantId:id},orderBy:[{createdAt:'asc'},{id:'asc'}],take:100})).map(e=>({id:e.id,orderId:e.orderId,type:e.type,environment:e.type.startsWith('PEY_')?'real':'mock',label:e.type.startsWith('PEY_')?'REAL':'SIMULADO',payload:JSON.parse(e.payload)})));
+    });
+    if(pey.dispatchIntervalMs!==undefined){
+      if(pey.dispatchIntervalMs<100)throw new Error('INVALID_DISPATCH_INTERVAL');
+      let timer:ReturnType<typeof setInterval>|undefined,running:Promise<unknown>|undefined;
+      app.addHook('onReady',async()=>{timer=setInterval(()=>{if(!running)running=(async()=>{await processor?.drain();await outbox.drain();})().catch(()=>undefined).finally(()=>{running=undefined;});},pey.dispatchIntervalMs);timer.unref();});
       app.addHook('onClose',async()=>{if(timer)clearInterval(timer);await running;});
     }
   }

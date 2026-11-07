@@ -9,12 +9,12 @@
 | 1 — Core (G1) | APROBADO | 47 tests; typecheck sin errores | Ninguno para G1 |
 | 2 — API/DB (G2) | APROBADO | 72 tests, typecheck, 3 migraciones y demo HTTP | Local, un proceso; sin pagos |
 | 3 — Mock/conciliación (G3) | APROBADO | 122 tests, typecheck, demo HTTP SIMULADO | No valida integración bancaria |
-| 4 — Pey real (G4) | PARCIAL: receptor + URL | 137 tests; HTTPS verificado | Falta transporte, conciliación y verificación bancaria; sin cobro |
+| 4 — Pey real (G4) | Técnico implementado; G4-R pendiente | 195 tests; typecheck; demo contractual | IDs/nombre legal, consulta autenticada y prueba bancaria autorizada |
 | 5 — OpenAI (G5) | NO INICIADA | — | — |
 | 6 — Frontend (G6) | NO INICIADA | — | — |
 | 7 — E2E/demo (G7) | NO INICIADA | — | — |
 
-**El paquete original era documental. La implementación del 2026-11-07 añade core ejecutable y pruebas; no añade integración financiera.**
+**El paquete original era documental. La implementación del 2026-11-07 añade core ejecutable y pruebas; la integración posterior está probada con fixtures, sin validación bancaria real.**
 
 ## Evidencias por ejecución
 
@@ -89,3 +89,12 @@ Usuario solicitó un mecanismo similar al del secreto de webhook. Se agregó pey
 ## Confirmación de API key local — 2026-11-07
 
 Usuario completó configurador privado. Se verificaron únicamente indicadores: API key presente, secreto de webhook conservado, archivo regular con permisos 0600, ALLOW_REAL_PAYMENTS=false y PAYMENT_PROVIDER=mock. No se imprimieron valores ni se utilizó la key contra pey. Tras habilitar acceso de red de esta sesión, receptor local y URL HTTPS devolvieron 200/ready; webhook:up reutilizó la URL vigente sin reemplazarla. El primer chequeo local de la sesión no conectó; verificación posterior local y pública satisfactoria. Pendientes: validar credenciales mediante operación autorizada, adaptador de envío y conciliación real, y monto/beneficiario concretos antes de cualquier cobro.
+
+## Ejecución 2026-11-07 — Implementación técnica G4
+
+- Autorización: «ok hagamoslo» tras propuesta de adaptador y conciliación. Gateway CoDi Push, consulta de cuenta/transacción, configuración privada, servicio de pagos, liquidación compartida, procesador cifrado con leases y migración 006 implementados. Sin frontend ni G5.
+- Evidencia final observada: pnpm typecheck salida 0; pnpm test: **195/195, 8 archivos**, 20.34 s; pnpm demo:pey salida 0, credenciales reales utilizadas 0 y cobros bancarios 0. Demo mock de regresión también aprobada. Migración 006 aplicada a la bandeja dedicada sin reset; health público ready y pagos deshabilitados.
+- Pruebas adversas: consentimiento exacto y vencimiento, cuenta inactiva/beneficiario incorrecto, precisión monetaria, timeout/503 sin replay, recuperación de huérfanos, callback temprano, firma/cifrado, correlaciones falsas, pago tardío, consulta PENDING/404/PAID, efectos duplicados y caída entre commit comercial y acuse de inbox.
+- Incidencia resuelta: una ejecución anterior no pudo abrir sockets locales por permisos del entorno; tras habilitar red y corregir el cleanup del test CLI, la suite completa aprobó. No se omitieron pruebas.
+- API key y secretos permanecen privados. No hubo llamadas autenticadas reales a pey. El comando pey:check-account está preparado pero no ejecutado. Faltan PEY_API_KEY_ID, PEY_BANK_ACCOUNT_ID y PEY_BENEFICIARY_NAME; helper local de captura preparado. ACTIVE/CoDi siguen reportados por el usuario.
+- G4-R no aprobado: falta verificar cuenta/credenciales y acordar importe y beneficiario concretos antes del cobro. Mock/off conservados, no se creó autorización por operación. Limitaciones y hechos documentados frente a evidencia de fixtures en docs/g4-pey-integration.md. Commit local; sin publicación remota.

@@ -1,5 +1,6 @@
 import { DomainError } from './orders.js';
 export interface PushSubmission {
+  providerBankAccountId?:string; beneficiaryDisplayName?:string; expirationSeconds?:number; snapshotHash?:string;
   attemptId:string; orderId:string; amountMinor:number; currency:'MXN';
   beneficiaryAccountId:string; apiKeyId:string; numRef:string; phoneNumber:string;
 }

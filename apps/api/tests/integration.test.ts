@@ -158,7 +158,7 @@ describe('G2 HTTP and persistence',()=>{
       expect((await fetch(address+'/health')).status).toBe(200);
       expect((await fetch(address+'/v1/intents/nope')).status).toBe(401);
       expect(()=>execFileSync(process.execPath,args,{env,stdio:'pipe',timeout:10000})).toThrow();
-    }finally{const stopped=once(child,'exit');child.kill('SIGTERM');await stopped;}
+    }finally{if(child.exitCode===null&&child.signalCode===null){const stopped=once(child,'exit');child.kill('SIGTERM');await stopped;}}
     const {access}=await import('node:fs/promises');await expect(access(join(dir,'test.db.server.lock'))).rejects.toThrow();
   },20000);
 

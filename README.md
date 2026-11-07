@@ -1,6 +1,6 @@
 # AgentPay OS — Codex Starter v1.2
 
-**Estado:** G1, G2 y G3 implementados: core, API local, persistencia SQLite/Prisma, reservas, consentimiento y auditoría. 122 pruebas y TypeScript estricto aprobados. Sin frontend ni integración financiera. Fecha: 2026-11-07.
+**Estado:** G1, G2 y G3 implementados: core, API local, persistencia SQLite/Prisma, reservas, consentimiento y auditoría. 195 pruebas y TypeScript estricto aprobados. Adaptador pey y conciliación probados con fixtures; prueba bancaria pendiente. Sin frontend. Fecha: 2026-11-07.
 
 ## Objetivo
 
@@ -12,7 +12,7 @@ Infraestructura B2B2C para comercio iniciado por IA, validado por políticas det
 2. G1, G2 y G3 ya están implementados. Ejecuta los comandos de reproducción de abajo.
 3. `pnpm demo` demuestra API y persistencia sin banco ni frontend.
 4. El prompt `prompts/START_CODEX.md` corresponde al arranque histórico de G1; no es la tarea siguiente.
-5. Siguiente gate: G4, adaptador pey y requisitos operativos. No activar pagos reales ni producción desde este paquete.
+5. Siguiente paso: completar los requisitos operativos de G4 y su prueba bancaria autorizada. No activar pagos reales ni producción desde este paquete.
 
 ## Archivos
 
@@ -55,7 +55,7 @@ pnpm test
 pnpm typecheck
 ```
 
-El paquete `@agentpay/core` está en `packages/core/src`. Las pruebas usan fixtures ficticios y no requieren variables de entorno. No existe servidor ni integración financiera. Ver `docs/architecture.md` y `docs/progress.md`.
+El paquete `@agentpay/core` está en `packages/core/src`. Las pruebas usan fixtures ficticios y no requieren variables de entorno. Existe API local y adaptador financiero protegido, sin validación bancaria real. Ver `docs/architecture.md` y `docs/progress.md`.
 
 ## Fase 2 — API persistente
 
@@ -82,3 +82,7 @@ Muestra solicitud pendiente → evento firmado → confirmación simulada → un
 ## URL de webhook pey — G4 parcial
 
 Receptor dedicado con SDK Standard Webhooks y almacenamiento cifrado; sin acciones financieras. `pnpm webhook:up` inicia/reutiliza URL temporal; `pnpm webhook:configure` guarda el secreto con entrada oculta; `pnpm webhook:down` detiene servicios propios. Configuración y teléfono privados no están en el ZIP. Guía: docs/pey-webhook-url.md. Suite actual: 137 pruebas. G4 bancaria todavía pendiente.
+
+## G4 — Adaptador implementado, banco pendiente
+
+`pnpm demo:pey` demuestra el contrato con fixtures sin credenciales ni cobros. Ver `docs/g4-pey-integration.md` para conciliación, recuperación, configuración privada y límites. G4-R no está aprobado; los pagos siguen desactivados.

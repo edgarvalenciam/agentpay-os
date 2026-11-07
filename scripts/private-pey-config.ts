@@ -5,14 +5,15 @@ export async function checkPrivateConfig(path:string){
   const stat=await lstat(path);
   if(!stat.isFile()||stat.isSymbolicLink()||(stat.mode&0o077)!==0)throw new Error('PRIVATE_CONFIGURATION_REQUIRED');
 }
-export async function savePrivateSetting(path:string,key:'PEY_API_KEY'|'PEY_WEBHOOK_SECRET',value:string){
+export type PrivatePeyKey='PEY_API_KEY'|'PEY_WEBHOOK_SECRET'|'PEY_API_KEY_ID'|'PEY_BANK_ACCOUNT_ID'|'PEY_BENEFICIARY_NAME';
+export async function savePrivateSettings(path:string,changes:Partial<Record<PrivatePeyKey,string>>){
   await checkPrivateConfig(path);
-  // Read only when saving, preserving any other configuration updated while the prompt was open.
-  const values=parseEnv(await readFile(path,'utf8'));values[key]=value;
+  const values=parseEnv(await readFile(path,'utf8'));Object.assign(values,changes);
   const temporary=path+'.'+randomUUID()+'.tmp';
   try{await writeFile(temporary,Object.entries(values).map(([k,v])=>`${k}=${JSON.stringify(v)}`).join('\n')+'\n',{flag:'wx',mode:0o600});await rename(temporary,path);}
   finally{await unlink(temporary).catch(()=>undefined);}
 }
+export async function savePrivateSetting(path:string,key:PrivatePeyKey,value:string){await savePrivateSettings(path,{[key]:value});}
 export async function hiddenInput(prompt:string):Promise<string>{
   if(!process.stdin.isTTY)throw new Error('TERMINAL_REQUIRED');
   process.stdout.write(prompt);

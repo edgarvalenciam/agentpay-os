@@ -202,6 +202,8 @@ model OutboxEvent {
 }
 
 model PaymentAttempt {
+  providerBankAccountId String?
+  expectedSnapshotHash  String?
   apiKeyId              String?
   beneficiaryAccountId  String?
   numRef                String?
@@ -237,6 +239,7 @@ model ProviderResource {
 }
 
 model ProviderTransaction {
+  datePaid      DateTime?
   id            String           @id
   resourceId    String
   resource      ProviderResource @relation(fields: [resourceId], references: [id])
@@ -296,14 +299,20 @@ model MerchantNotification {
 }
 
 model PeyWebhookInbox {
-  id             String   @id
-  deliveryId     String   @unique
-  payloadHash    String
-  eventType      String
-  ciphertext     String
-  iv             String
-  authTag        String
-  keyFingerprint String
-  status         String   @default("VERIFIED_PENDING_RECONCILIATION")
-  receivedAt     DateTime @default(now())
+  processingAttempts Int       @default(0)
+  processedAt        DateTime?
+  leaseUntil         DateTime?
+  leaseToken         String?
+  nextAttemptAt      DateTime?
+  lastError          String?
+  id                 String    @id
+  deliveryId         String    @unique
+  payloadHash        String
+  eventType          String
+  ciphertext         String
+  iv                 String
+  authTag            String
+  keyFingerprint     String
+  status             String    @default("VERIFIED_PENDING_RECONCILIATION")
+  receivedAt         DateTime  @default(now())
 }

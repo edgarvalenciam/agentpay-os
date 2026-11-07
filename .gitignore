@@ -12,3 +12,4 @@ coverage/
 *.db-shm
 *.server.lock
 work/
+.pey-payment-authorization.json

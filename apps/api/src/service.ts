@@ -9,7 +9,7 @@ export interface Result { status:number; body:unknown }
 function buyer(actor: Actor) { if (actor.role !== 'BUYER') throw new ApiError(403,'BUYER_REQUIRED'); return actor.id; }
 function missing(): never { throw new ApiError(404,'NOT_FOUND'); }
 function summary(snapshot: OrderSnapshot) {
-  return {environment:snapshot.account.provider==='mock'?'mock':'unconfigured',label:snapshot.account.provider==='mock'?'SIMULADO':'NO_DISPONIBLE',orderId:snapshot.orderId,version:snapshot.version,method:snapshot.method,merchantId:snapshot.merchant.id,
+  return {environment:snapshot.account.provider==='mock'?'mock':'real',label:snapshot.account.provider==='mock'?'SIMULADO':'REAL',orderId:snapshot.orderId,version:snapshot.version,method:snapshot.method,merchantId:snapshot.merchant.id,
     productId:snapshot.offer.productId,quantity:snapshot.offer.quantity,unit:snapshot.offer.unit,
     amountMinor:snapshot.offer.amountMinor,currency:snapshot.offer.currency,deliveryAt:snapshot.offer.deliveryAt,
     beneficiaryAccountId:snapshot.account.id,beneficiaryDisplayName:snapshot.account.beneficiaryDisplayName,
@@ -113,9 +113,9 @@ export class CommerceService {
   }
   getOrder(actor:Actor,id:string){return this.db.read(async tx=>{const order=await this.ownedOrder(tx,id,actor);return {id:order.id,status:order.status,snapshotHash:order.snapshot!.hash,snapshot:summary(OrderSnapshotSchema.parse(JSON.parse(order.snapshot!.data)))};});}
   getEvents(actor:Actor,id:string){return this.db.read(async tx=>{await this.ownedOrder(tx,id,actor);const events=await tx.auditEvent.findMany({where:{orderId:id},orderBy:[{createdAt:'asc'},{id:'asc'}],take:100});return events.map(e=>({id:e.id,type:e.type,data:JSON.parse(e.data),createdAt:e.createdAt}));});}
-  merchantOrders(actor:Actor,merchantId:string){if(actor.role!=='MERCHANT'||actor.id!==merchantId)throw new ApiError(403,'MERCHANT_REQUIRED');return this.db.read(async tx=>(await tx.order.findMany({where:{merchantId},select:{id:true,status:true,fulfillmentStatus:true,createdAt:true,snapshot:{select:{data:true}}},take:100,orderBy:{createdAt:'desc'}})).map(row=>{const simulated=row.snapshot&&OrderSnapshotSchema.parse(JSON.parse(row.snapshot.data)).account.provider==='mock';return {id:row.id,status:row.status,fulfillmentStatus:row.fulfillmentStatus,createdAt:row.createdAt,environment:simulated?'mock':'unconfigured',label:simulated?'SIMULADO':'NO_DISPONIBLE'};}));}
+  merchantOrders(actor:Actor,merchantId:string){if(actor.role!=='MERCHANT'||actor.id!==merchantId)throw new ApiError(403,'MERCHANT_REQUIRED');return this.db.read(async tx=>(await tx.order.findMany({where:{merchantId},select:{id:true,status:true,fulfillmentStatus:true,createdAt:true,snapshot:{select:{data:true}}},take:100,orderBy:{createdAt:'desc'}})).map(row=>{const simulated=row.snapshot&&OrderSnapshotSchema.parse(JSON.parse(row.snapshot.data)).account.provider==='mock';return {id:row.id,status:row.status,fulfillmentStatus:row.fulfillmentStatus,createdAt:row.createdAt,environment:simulated?'mock':'real',label:simulated?'SIMULADO':'REAL'};}));}
   /** Must be called inside the payment admission transaction with a trusted buyer identity. */
-  async revalidateForPayment(tx:Tx,orderId:string,buyerId:string,now:string,hash:string){
+  async revalidateForPayment(tx:Tx,orderId:string,buyerId:string,now:string,hash:string,provider:'mock'|'pey'='mock'){
     const row=await tx.order.findFirst({where:{id:orderId,buyerId},include:{snapshot:true,consent:true}});
     if(!row||!row.snapshot||!row.consent)missing();
     if(row.status!=='APPROVED')throw new ApiError(409,'ORDER_NOT_PAYABLE');
@@ -127,7 +127,7 @@ export class CommerceService {
     const current=createSnapshot(intent,{...offer,stock:original.offer.stock},ctx);
     const consent=ConsentRecordSchema.parse(JSON.parse(row.consent.data));
     if(fingerprint(current)!==row.snapshot.hash||!canRequestPayment(current,consent,now))throw new ApiError(409,'SNAPSHOT_CHANGED');
-    if(current.account.provider!=='mock')throw new ApiError(409,'MOCK_ACCOUNT_REQUIRED');
+    if(current.account.provider!==provider)throw new ApiError(409,'PAYMENT_PROVIDER_MISMATCH');
     return {row,snapshot:current,consent};
   }
   /** Explicit local maintenance, also invoked before writes; no timer or financial action. */

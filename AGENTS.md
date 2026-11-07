@@ -80,3 +80,12 @@ El usuario autorizó crear la URL de webhooks y proporcionó su teléfono para c
 - Sin secreto del portal: 503, no aceptar eventos sin firma. La configuración se recarga sin reinicio.
 - Firma válida permite almacenar evidencia cifrada y pendiente; no marcar órdenes PAID desde la bandeja sin conciliación.
 - G4 continúa parcial: falta transporte pey, conciliación real y validación bancaria explícita. Ver docs/pey-webhook-url.md.
+
+## Autorización de implementación G4 — 2026-11-07
+
+El usuario indicó «ok hagamoslo» tras proponer adaptador pey y conciliación. Se autoriza implementar y probar G4 con fixtures, sin frontend ni G5. Las restricciones históricas de G1/G3 no impiden este trabajo posterior.
+
+- Adaptador, procesador cifrado y conciliación implementados; ver docs/g4-pey-integration.md. G4-R sigue pendiente.
+- Mantener mock/off. No usar credenciales reales en llamadas ni generar cobros sin autorización concreta de operación, importe y beneficiario.
+- La autorización por orden es privada, expira y vincula snapshot/importe/cuenta/teléfono; nunca incluirla en commits o ZIP.
+- No confundir pruebas contractuales con una entrega auténtica o confirmación bancaria. No reenviar POST ambiguos.

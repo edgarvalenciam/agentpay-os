@@ -63,7 +63,7 @@
 | 1 | Dominio y motor de políticas | Completo: 47 tests y typecheck | G1 |
 | 2 | API, persistencia y órdenes | Completo: API local, DB, reservas y auditoría | G2 |
 | 3 | Orquestación de pagos simulada y conciliación | Completo: mock, conciliación y outbox local | G3 |
-| 4 | Integración real pey/CoDi | Parcial: URL y receptor verificado; banco pendiente | G4 |
+| 4 | Integración real pey/CoDi | Adaptador y conciliación con fixtures; banco pendiente | G4 |
 | 5 | Agente OpenAI | ☐ Pendiente | G5 |
 | 6 | Frontend comprador/comercio | ☐ Pendiente | G6 |
 | 7 | E2E, seguridad y demo | ☐ Pendiente | G7 |
@@ -729,3 +729,7 @@ Gateway CODI_PUSH simulado, solicitud persistida antes del envío, UNKNOWN sin r
 ## Preparación de URL G4 — 2026-11-07
 
 Receptor dedicado y túnel HTTPS temporal preparados por solicitud del usuario. Verificador oficial Standard Webhooks, inbox cifrada y pruebas implementados; 137 tests aprobados. Falta secreto del portal, transporte/conciliación pey y prueba financiera. G4-R no aprobado. Ningún cobro realizado. Guía: docs/pey-webhook-url.md.
+
+## Implementación técnica G4 — 2026-11-07
+
+Adaptador CoDi Push protegido, consulta de cuenta/transacción, procesador de webhook cifrado y conciliación implementados. 195 pruebas y typecheck aprobados; demo contractual sin banco. G4-R permanece pendiente: faltan IDs/nombre legal, validación autenticada y acuerdo concreto de monto/beneficiario. No se realizaron llamadas autenticadas reales ni cobros. Ver docs/g4-pey-integration.md.

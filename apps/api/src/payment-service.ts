@@ -1,3 +1,4 @@
+import { confirmPaymentEffect } from './settlement.js';
 import { createHash, randomInt, randomUUID } from 'node:crypto';
 import { OrderSnapshotSchema, fingerprint, minorToMxn, reconcileNotice, transitionOrder, transitionPayment, transitionFulfillment, type PaymentAttemptStatus, type OrderStatus, type PushSubmission } from '@agentpay/core';
 import type { UnitOfWork, Tx } from '@agentpay/database';
@@ -58,9 +59,9 @@ export class PaymentService {
     return prepared.result;
   }
   private async owned(tx:Tx,actor:Actor,orderId:string){
-    const order=await tx.order.findFirst({where:{id:orderId,...(actor.role==='BUYER'?{buyerId:actor.id}:{merchantId:actor.id})}});if(!order)throw new ApiError(404,'NOT_FOUND');return order;
+    const order=await tx.order.findFirst({where:{id:orderId,...(actor.role==='BUYER'?{buyerId:actor.id}:{merchantId:actor.id})},include:{snapshot:true}});if(!order)throw new ApiError(404,'NOT_FOUND');if(!order.snapshot||OrderSnapshotSchema.parse(JSON.parse(order.snapshot.data)).account.provider!=='mock')throw new ApiError(409,'PAYMENT_PROVIDER_MISMATCH');return order;
   }
-  list(actor:Actor,orderId:string){return this.db.read(async tx=>{const order=await this.owned(tx,actor,orderId);const rows=await tx.paymentAttempt.findMany({where:{orderId},orderBy:{createdAt:'asc'}});return {environment:'mock',label:'SIMULADO',orderStatus:order.status,fulfillmentStatus:order.fulfillmentStatus,attempts:rows.map(a=>({id:a.id,status:a.status,method:a.method,amountMinor:a.requestedAmountMinor,currency:a.currency,expiresAt:a.expiresAt,createdAt:a.createdAt}))};});}
+  list(actor:Actor,orderId:string){return this.db.read(async tx=>{const order=await this.owned(tx,actor,orderId);const rows=await tx.paymentAttempt.findMany({where:{orderId,provider:'mock'},orderBy:{createdAt:'asc'}});return {environment:'mock',label:'SIMULADO',orderStatus:order.status,fulfillmentStatus:order.fulfillmentStatus,attempts:rows.map(a=>({id:a.id,status:a.status,method:a.method,amountMinor:a.requestedAmountMinor,currency:a.currency,expiresAt:a.expiresAt,createdAt:a.createdAt}))};});}
   async receive(raw:Buffer,headers:Record<string,unknown>){
     let verified:ReturnType<typeof verifyMockEvent>;
     try{verified=verifyMockEvent(raw,headers,this.config.webhookSecret,this.clock());}catch(err){if(err instanceof MockSignatureError)throw new ApiError(401,'INVALID_MOCK_SIGNATURE');throw new ApiError(400,'INVALID_MOCK_EVENT');}
@@ -84,30 +85,7 @@ export class PaymentService {
         }
         await this.audit(tx,attempt.orderId,'MOCK_RECONCILIATION_EXCEPTION',{attemptId:attempt.id,reasons:comparison.reasons,environment:'mock'});
       }else if(paid){
-        const previous=await tx.providerTransaction.findUnique({where:{provider_transactionId:{provider:'mock',transactionId:notice.transactionId}},include:{resource:true}});
-        if(previous&&previous.resource.attemptId!==attempt.id)throw new ApiError(409,'TRANSACTION_ALREADY_USED');
-        if(attempt.status==='CONFIRMED'||previous){outcome='ALREADY_CONFIRMED';}
-        else{
-          const snapshot=OrderSnapshotSchema.parse(JSON.parse(attempt.order.snapshot!.data));
-          const reservation=attempt.order.reservation;
-          const product=await tx.product.findUniqueOrThrow({where:{id:snapshot.offer.productId}});
-          const other=await tx.reservation.aggregate({where:{productId:product.id,id:{not:reservation.id},status:'RESERVED',validUntil:{gt:new Date(this.clock())}},_sum:{quantity:true}});
-          const merchant=await tx.merchant.findUniqueOrThrow({where:{id:attempt.order.merchantId}});
-          const canFulfill=reservation.status==='RESERVED'&&reservation.validUntil.getTime()>Date.parse(this.clock())&&product.stock-(other._sum.quantity??0)>=snapshot.offer.quantity&&merchant.status==='ACTIVE'&&merchant.canFulfill;
-          let resource=await tx.providerResource.findUnique({where:{provider_resourceType_resourceId:{provider:'mock',resourceType:'PUSH_TRANSACTION',resourceId:notice.transactionId}}});
-          if(resource&&resource.attemptId!==attempt.id)throw new ApiError(409,'RESOURCE_ALREADY_USED');
-          resource??=await tx.providerResource.create({data:{id:randomUUID(),attemptId:attempt.id,provider:'mock',resourceType:'PUSH_TRANSACTION',resourceId:notice.transactionId}});
-          await tx.providerTransaction.create({data:{id:randomUUID(),resourceId:resource.id,provider:'mock',transactionId:notice.transactionId,amountMinor:notice.amountMinor,currency:notice.currency,status:'PAID'}});
-          await tx.paymentAttempt.update({where:{id:attempt.id},data:{status:transitionPayment(attempt.status as PaymentAttemptStatus,'CONFIRMED'),activeSlot:null,providerTransactionId:notice.transactionId,codiId:ledger!.codiId}});
-          const paidStatus=transitionOrder(attempt.order.status as OrderStatus,'PAYMENT_RECONCILED');
-          const orderStatus=canFulfill?paidStatus:transitionOrder(paidStatus,'RAISE_EXCEPTION');
-          await tx.order.update({where:{id:attempt.orderId},data:{status:orderStatus,fulfillmentStatus:transitionFulfillment('RESERVED',canFulfill?'READY_FOR_PREPARATION':'FULFILLMENT_EXCEPTION','CONFIRMED')}});
-          if(canFulfill){await tx.product.update({where:{id:product.id},data:{stock:{decrement:snapshot.offer.quantity}}});await tx.reservation.update({where:{id:reservation.id},data:{status:'CONSUMED'}});}
-          else if(reservation.status==='RESERVED')await tx.reservation.update({where:{id:reservation.id},data:{status:'RELEASED'}});
-          outcome=canFulfill?'CONFIRMED':'CONFIRMED_FULFILLMENT_EXCEPTION';
-          await this.audit(tx,attempt.orderId,'MOCK_PAYMENT_CONFIRMED',{attemptId:attempt.id,environment:'mock',fulfillment:canFulfill?'READY_FOR_PREPARATION':'FULFILLMENT_EXCEPTION'});
-          await tx.outboxEvent.create({data:{id:randomUUID(),orderId:attempt.orderId,type:canFulfill?'MOCK_ORDER_PAID':'MOCK_FULFILLMENT_EXCEPTION',effectKey:'mock-paid:'+notice.transactionId,payload:JSON.stringify({orderId:attempt.orderId,environment:'mock',label:'SIMULADO',fulfillmentStatus:canFulfill?'READY_FOR_PREPARATION':'FULFILLMENT_EXCEPTION'}),createdAt:new Date(this.clock()),availableAt:new Date(this.clock())}});
-        }
+        outcome=await confirmPaymentEffect(tx,{attemptId:attempt.id,provider:'mock',transactionId:notice.transactionId,amountMinor:notice.amountMinor,currency:notice.currency,codiId:ledger!.codiId,datePaid:notice.datePaid},this.clock());
       }else{outcome=attempt.status==='CONFIRMED'?'IGNORED_UNCONFIRMED':'UNCONFIRMED';await this.audit(tx,attempt.orderId,'MOCK_PAYMENT_UNCONFIRMED',{attemptId:attempt.id,environment:'mock'});}
       await tx.paymentEvent.create({data:{id:randomUUID(),attemptId:attempt.id,provider:'mock',deliveryId,payloadHash,type:notice.type,outcome,createdAt:new Date(this.clock())}});
       return {environment:'mock',label:'SIMULADO',outcome,duplicate:false};
