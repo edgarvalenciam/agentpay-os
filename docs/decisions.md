@@ -95,3 +95,11 @@
 - Solo MOCK_ORDER_PAID / MOCK_FULFILLMENT_EXCEPTION producen notificación de pago/alerta. ORDER_APPROVED_INTERNAL no autoriza preparación.
 - Worker en servidor local cada segundo; pruebas y demos pueden despachar explícitamente. No se contacta un canal externo ni se afirma exactly-once externo.
 - Migración G3 añade columnas/tablas y reconstruye solo OutboxEvent para su default temporal; preserva snapshots, consentimiento y triggers. Test de upgrade con datos G2 valida continuidad.
+
+## ADR-015 — Receptor público aislado y bandeja cifrada
+- Fecha: 2026-11-07. G4 parcial autorizado para URL.
+- Puerto/receptor exclusivo para salud y webhook pey. No se publica Fastify API comercial ni rutas mock. Quick Tunnel temporal para desarrollo, procesos locales administrados por PID e identidad.
+- SDK standardwebhooks oficial en lugar del HMAC mock de G3. Verificar raw body y cabeceras antes de almacenar; sin secreto del portal, rechazar con 503.
+- PeyWebhookInbox separada, payload cifrado AES-256-GCM con clave local independiente. Logs apagados; no persistir cuerpos bancarios crudos en auditoría. Dedup entrega/hash, acuse solo tras commit.
+- Cada registro queda VERIFIED_PENDING_RECONCILIATION; no se transforma en pago ni entrega de producto. La conciliación real y el transporte financiero están fuera de esta autorización de URL.
+- Configuración privada 0600 recargada por solicitud; incluye teléfono proporcionado sin replicarlo a fixtures ni repositorio. Secretos se introducen en terminal con entrada oculta, no en chat.

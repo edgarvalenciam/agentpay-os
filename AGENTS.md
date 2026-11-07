@@ -70,3 +70,13 @@ El usuario autorizó «continuemos con el siguiente fase» tras G2. Se permite �
 - SUBMISSION_PENDING huérfano pasa a UNKNOWN al reiniciar; nunca reenviar automáticamente. La aceptación idempotente 202 es histórica; consultar GET para estado actual.
 - Pago tardío confirmado conserva evidencia y entra a excepción de cumplimiento si no hay reserva/stock. Consumo de inventario y outbox deben ser atómicos.
 - Outbox entrega a bandeja local persistente; no enviar email, mensajes ni tráfico externo. Ver `docs/g3-mock-payments.md`.
+
+## Autorización de URL / G4 parcial — 2026-11-07
+
+El usuario autorizó crear la URL de webhooks y proporcionó su teléfono para configuración local. Esta entrega permite receptor dedicado, Standard Webhooks e infraestructura de túnel. No autoriza inferir un monto/destinatario ni ejecutar un cobro; no implementar frontend.
+
+- Solo exponer el puerto del receptor dedicado, nunca la API comercial ni los controles mock.
+- Teléfono/secretos únicamente en .env.pey.local privada e ignorada; jamás agregarla a commits, logs o ZIP.
+- Sin secreto del portal: 503, no aceptar eventos sin firma. La configuración se recarga sin reinicio.
+- Firma válida permite almacenar evidencia cifrada y pendiente; no marcar órdenes PAID desde la bandeja sin conciliación.
+- G4 continúa parcial: falta transporte pey, conciliación real y validación bancaria explícita. Ver docs/pey-webhook-url.md.

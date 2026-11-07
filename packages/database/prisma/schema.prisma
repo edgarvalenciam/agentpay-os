@@ -294,3 +294,16 @@ model MerchantNotification {
 
   @@index([merchantId, createdAt])
 }
+
+model PeyWebhookInbox {
+  id             String   @id
+  deliveryId     String   @unique
+  payloadHash    String
+  eventType      String
+  ciphertext     String
+  iv             String
+  authTag        String
+  keyFingerprint String
+  status         String   @default("VERIFIED_PENDING_RECONCILIATION")
+  receivedAt     DateTime @default(now())
+}

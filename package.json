@@ -10,7 +10,11 @@
     "db:seed": "tsx packages/database/src/seed-cli.ts",
     "dev:api": "tsx apps/api/src/server.ts",
     "demo": "tsx scripts/demo.ts",
-    "demo:payments": "tsx scripts/demo-payments.ts"
+    "demo:payments": "tsx scripts/demo-payments.ts",
+    "webhook:serve": "tsx apps/api/src/pey-webhook-server.ts",
+    "webhook:configure": "tsx scripts/configure-pey-webhook.ts",
+    "webhook:up": "tsx scripts/webhook-up.ts",
+    "webhook:down": "tsx scripts/webhook-down.ts"
   },
   "devDependencies": {
     "typescript": "5.9.3",

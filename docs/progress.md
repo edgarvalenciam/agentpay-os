@@ -9,7 +9,7 @@
 | 1 — Core (G1) | APROBADO | 47 tests; typecheck sin errores | Ninguno para G1 |
 | 2 — API/DB (G2) | APROBADO | 72 tests, typecheck, 3 migraciones y demo HTTP | Local, un proceso; sin pagos |
 | 3 — Mock/conciliación (G3) | APROBADO | 122 tests, typecheck, demo HTTP SIMULADO | No valida integración bancaria |
-| 4 — Pey real (G4) | NO INICIADA | — | G0-R pendiente |
+| 4 — Pey real (G4) | PARCIAL: receptor + URL | 137 tests; HTTPS verificado | Falta secreto, transporte y conciliación real; sin cobro |
 | 5 — OpenAI (G5) | NO INICIADA | — | — |
 | 6 — Frontend (G6) | NO INICIADA | — | — |
 | 7 — E2E/demo (G7) | NO INICIADA | — | — |
@@ -63,3 +63,17 @@ Codex debe anexar para cada gate: fecha, archivos modificados, comandos ejecutad
 - Incidencias: instalación offline no pudo verificar metadata de dependencias existentes; instalación normal posterior completada tras acceso de red. No se añadieron SDKs financieros ni dependencias de firma. Primera ejecución de suite G3: 121/121; agregada prueba de upgrade: 122/122; verificación final de etiquetas: 122/122. Tras añadir etiqueta mock a recuperación de startup, regresión focalizada de pagos 36/36 y typecheck aprobados.
 - G3 aprobado. Sin frontend, OpenAI, claves pey, webhook pey operativo ni operaciones bancarias reales. Mocks y respuestas etiquetados SIMULADO; controles requieren token distinto del comprador.
 - Bloqueos G3: ninguno. Límites: servidor y DB locales, un proceso, firma mock distinta de pey, sink de notificaciones solo local, sin garantía exactly-once externa. G4 no iniciado; contratos reales, Standard Webhooks, habilitación y prueba bancaria autorizada siguen pendientes. No se publicó a remoto.
+
+## Ejecución 2026-11-07 — URL pública / G4 parcial
+
+- Autorización: usuario solicitó crear la URL y facilitó teléfono. Teléfono guardado solo en configuración privada 0600; no se imprime ni se incorpora al repo/entregables.
+- Receptor dedicado en loopback, expuesto con Quick Tunnel de Cloudflare. Instalación local portable cloudflared 2026.10.7 desde release oficial, digest SHA-256 verificado. No instalación global ni exposición del servidor comercial.
+- Nuevos archivos: verificador SDK Standard Webhooks, carga de config privada, receptor/arranque dedicado, scripts de up/down/configuración oculta, modelo/migración 005 PeyWebhookInbox, 15 tests y guía operativa.
+- Validación de firma oficial sobre cuerpo crudo, deduplicación deliveryId/hash, payload cifrado AES-256-GCM y acuse solo después de persistir. Ninguna transición financiera: estado VERIFIED_PENDING_RECONCILIATION.
+- Comandos observados: instalación normal y generación Prisma aprobadas; typecheck salida 0; test focalizado 15/15; suite completa 137/137 (5 archivos). Quinta migración aplicada a DB dedicada. Comando up repetido conserva URL y procesos vivos.
+- HTTPS verificado desde conexión pública: GET /health 200 waiting_for_webhook_secret; POST /v1/webhooks/pey 503 sin secreto; /v1/orders y controles mock 404. Logs sin cuerpos/PII. URL vigente en estado privado de runtime e informe de outputs, no fijada en código.
+- Los procesos quedan activos en segundo plano por autorización del usuario. URL temporal depende de Mac encendida/conectada; se puede detener con webhook:down.
+- Estado G4 parcial, no aprobado como integración bancaria. Pendiente: registrar URL en portal y guardar secreto local; implementar transporte y conciliación pey; fijar monto/beneficiario antes de cualquier prueba real. Cuenta ACTIVE y CoDi reportados por usuario, sin consulta autenticada independiente. API key real no utilizada; cero cobros.
+- Commit identificable por mensaje feat(webhooks): add isolated pey receiver and temporary URL tooling. Sin publicación de código a remoto.
+
+- Incidencia operativa resuelta: restricciones del entorno impedían inspeccionar/señalizar procesos previos (EPERM). El launcher ahora trata EPERM como proceso existente en vez de asumir que terminó; no relanza una sesión incompleta. Se verificaron los procesos propios con permisos adecuados, se cerró un túnel duplicado y se conservó un único receptor/túnel con estado corregido. Pruebas HTTPS posteriores y reuso de URL aprobados. Down no borra estado si no puede verificar o detener procesos.

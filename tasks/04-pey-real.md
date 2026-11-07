@@ -6,7 +6,7 @@
 - [ ] `PeyCodiPushGateway` (backend) `POST /codi/pn`, Bearer, conversion exacta `amountMinor` → pesos, 10 dígitos, `expiration>=360`, `numRef` <=7 dígitos, metadata plana.
 - [ ] Registrar `transactionId`, `codiId`, `apiKeyId` y beneficiario configurado. Nunca marcar PAID por HTTP 200.
 - [ ] `GET /transaction/:id` y mapeo de estados publicados `PENDING`/`PAID`.
-- [ ] Verificador Standard Webhooks sobre raw body: `webhook-id`, `webhook-timestamp`, `webhook-signature`, secreto de API key y deduplicación.
+- [x] Verificador Standard Webhooks sobre raw body: `webhook-id`, `webhook-timestamp`, `webhook-signature`, secreto de API key y deduplicación.
 - [ ] Reconciliar `codi.pn.payment_received`, importe, `transactionId`, merchant/receptor, referencia, entorno y fecha.
 - [ ] Recovery ante 503/timeout `SUBMISSION_UNKNOWN`, sin re-POST automático.
 - [ ] Distinguir operaciones mock vs reales en cada vista/evento.
@@ -20,3 +20,5 @@
 - [ ] Tests contractuales de los campos de pey sobre fixtures publicados.
 - [ ] Prueba financiera real de bajo monto solo si autorizada por pagador y beneficiario; registrar evidencia verificable sin exponer PII.
 - [ ] Si falla la habilitación, declarar G4-R no cumplido y mantener una demo etiquetada MOCK, sin engañar al juez.
+
+G4 parcial: solo receptor aislado + URL temporal, bandeja cifrada pendiente de conciliación. No implementa envío ni confirmación financiera. Ver docs/pey-webhook-url.md.

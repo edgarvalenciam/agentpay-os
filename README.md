@@ -78,3 +78,7 @@ pnpm demo:payments
 ```
 
 Muestra solicitud pendiente → evento firmado → confirmación simulada → una notificación interna → recuperación tras reinicio, con duplicados ignorados. No necesita credenciales de pey ni mueve dinero. Contratos, escenarios UNKNOWN, permisos de operador, recuperación y pruebas: `docs/g3-mock-payments.md`. La firma mock no acredita compatibilidad bancaria.
+
+## URL de webhook pey — G4 parcial
+
+Receptor dedicado con SDK Standard Webhooks y almacenamiento cifrado; sin acciones financieras. `pnpm webhook:up` inicia/reutiliza URL temporal; `pnpm webhook:configure` guarda el secreto con entrada oculta; `pnpm webhook:down` detiene servicios propios. Configuración y teléfono privados no están en el ZIP. Guía: docs/pey-webhook-url.md. Suite actual: 137 pruebas. G4 bancaria todavía pendiente.

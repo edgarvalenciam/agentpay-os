@@ -63,7 +63,7 @@
 | 1 | Dominio y motor de políticas | Completo: 47 tests y typecheck | G1 |
 | 2 | API, persistencia y órdenes | Completo: API local, DB, reservas y auditoría | G2 |
 | 3 | Orquestación de pagos simulada y conciliación | Completo: mock, conciliación y outbox local | G3 |
-| 4 | Integración real pey/CoDi | ☐ Pendiente | G4 |
+| 4 | Integración real pey/CoDi | Parcial: URL y receptor verificado; banco pendiente | G4 |
 | 5 | Agente OpenAI | ☐ Pendiente | G5 |
 | 6 | Frontend comprador/comercio | ☐ Pendiente | G6 |
 | 7 | E2E, seguridad y demo | ☐ Pendiente | G7 |
@@ -725,3 +725,7 @@ API local y SQLite/Prisma implementados. 72 pruebas aprobadas (47 core + 25 inte
 ## Cierre G3 — 2026-11-07
 
 Gateway CODI_PUSH simulado, solicitud persistida antes del envío, UNKNOWN sin reintento, webhook HMAC de desarrollo separado de pey, conciliación y outbox/bandeja local implementados. 122 pruebas, typecheck y demo HTTP de pago simulado aprobados. No hay frontend, credenciales reales ni operaciones bancarias. La firma oficial Standard Webhooks sigue en G4; ver `docs/g3-mock-payments.md`.
+
+## Preparación de URL G4 — 2026-11-07
+
+Receptor dedicado y túnel HTTPS temporal preparados por solicitud del usuario. Verificador oficial Standard Webhooks, inbox cifrada y pruebas implementados; 137 tests aprobados. Falta secreto del portal, transporte/conciliación pey y prueba financiera. G4-R no aprobado. Ningún cobro realizado. Guía: docs/pey-webhook-url.md.

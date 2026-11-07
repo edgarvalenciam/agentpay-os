@@ -52,3 +52,7 @@ Fuentes: enlaces oficiales listados en `docs/pey-capabilities.md`.
 Se consultó el OpenAPI 2026-10-20 completo (11 operaciones), las cuatro familias de webhook, seguridad, configuración, alta, tipos, tutorial QR y changelog público. Se contrastó con el sitemap; índices de navegación y recursos de marca no añaden contratos financieros. Responsable: Codex. Ver `pey-review-2026-11-07.md` para fuentes y correcciones. No se llamó a `api.pey.mx` ni al portal.
 
 **Hallazgos nuevos:** consulta de link incluye `partial`; transacción completa usa `id`; metadata anidada en `externalMetadata`; cuenta bancaria usa estados mayúsculos. Idempotencia upstream, operación para terceros y eventos de rechazo siguen sin confirmación pública.
+
+## Preparación de URL — 2026-11-07
+
+Usuario reporta cuenta receptora ACTIVE y teléfono con CoDi. No se han consultado con credenciales reales. Receptor dedicado HTTPS operativo; secreto de firma aún pendiente de configuración en el portal. Mientras falta, responde 503 y no guarda eventos. SDK Standard Webhooks verificado con fixtures; eso no constituye recepción de evento pey real. G0-R/G4-R pendientes de configuración completa y prueba bancaria autorizada con monto/beneficiario definidos.
