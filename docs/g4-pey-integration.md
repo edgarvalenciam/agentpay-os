@@ -29,3 +29,13 @@ Para enviar se requieren además ambas banderas explícitas de habilitación (ar
 ## Fuentes y límites de evidencia
 
 Contrato documentado: [OpenAPI pey](https://docs.pey.mx/openapi.json), versión consultada 2026-10-20, y [webhook CoDi Push](https://docs.pey.mx/docs/webhooks/codi/pn/). La suite prueba nuestra interpretación mediante fixtures; no acredita interoperabilidad bancaria real. No se documenta idempotencia upstream: no se asume. QR, Payment Links, alta de cuentas, reembolsos y pagos a terceros no están implementados por este adaptador.
+
+## Revisión de identificadores — 2026-11-07
+
+La revisión de OpenAPI confirma GET /transaction/api-key: identifica la clave desde Authorization y no requiere apiKeyId. Permite verificar acceso y consultar transacciones, pero el esquema de respuesta no expone apiKeyId ni un inventario de cuentas. No se encontró en la API pública revisada un endpoint para recuperar el perfil/ID de la clave. No sustituir por ID de usuario ni inferir IDs de tokens opacos de paginación.
+
+POST /codi/pn no requiere apiKeyId; bankAccountId es opcional y, si se omite, pey usa la cuenta CoDi vinculada a la clave. El webhook solo incluye bankAccountId cuando se envió explícitamente. Estos son hechos del contrato; exigir ambos identificadores antes del envío es una política adicional de AgentPay, no un requisito de autenticación de pey. No se ha eliminado la validación del beneficiario ni se ha activado un modo de cuenta predeterminada sin comprobarla.
+
+Se agregó pnpm pey:check-key, una única consulta GET autenticada de solo lectura. Descarta el cuerpo financiero, no imprime secretos/IDs/transacciones y no cambia configuración. No requiere los IDs pendientes. Preparado y probado con transporte ficticio; no ejecutado contra pey. Un 200 acredita acceso al endpoint, no cuenta ACTIVE ni entrega de CoDi. Los webhooks auténticos pueden proporcionar apiKeyId; la bandeja local sigue siendo una fuente de evidencia, no se generan pagos para descubrir identificadores.
+
+Fuentes: https://docs.pey.mx/openapi.json y https://docs.pey.mx/docs/webhooks/codi/pn/ (consultadas 2026-11-07).
