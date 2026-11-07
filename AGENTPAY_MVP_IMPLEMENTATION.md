@@ -2,7 +2,7 @@
 
 **Versión:** 1.2 — inventario integral de API pey y plan de implementación (07-nov-2026)  
 **Fecha:** 2026-11-07  
-**Estado:** Plan revisado de ejecución; ninguna fase se considera implementada  
+**Estado:** G1 implementado y verificado; G0-D revisado; G0-R y Fases 2–7 pendientes
 **Objetivo:** Construir y demostrar una compra iniciada por IA, validada por políticas deterministas y pagada mediante CoDi Push a través de pey, con confirmación financiera verificable.
 
 > **Principio:** El agente propone; el core valida; el comprador solicita el cobro y autoriza en su banco; el proveedor financiero comunica el resultado; AgentPay concilia; el comercio cumple la orden.
@@ -59,8 +59,8 @@
 
 | Fase | Entregable | Estado | Gate |
 |---|---|---|---|
-| 0 | Factibilidad pey/CoDi y contratos | ☐ Pendiente | G0 |
-| 1 | Dominio y motor de políticas | ☐ Pendiente | G1 |
+| 0 | Factibilidad pey/CoDi y contratos | Documental verificado; operativo pendiente | G0-D / G0-R |
+| 1 | Dominio y motor de políticas | Completo: 47 tests y typecheck | G1 |
 | 2 | API, persistencia y órdenes | ☐ Pendiente | G2 |
 | 3 | Orquestación de pagos simulada y conciliación | ☐ Pendiente | G3 |
 | 4 | Integración real pey/CoDi | ☐ Pendiente | G4 |
@@ -258,16 +258,16 @@ Actúa como arquitecto de integraciones de pagos. Revisa únicamente la document
 
 ### Checklist
 
-- [ ] Configurar workspace TypeScript y Vitest.
-- [ ] Crear schemas Zod y tipos de dominio.
-- [ ] Implementar `evaluateOffer(intent, offer, context)` como función pura.
-- [ ] Implementar snapshots y hash/versionado de condiciones, incluyendo importe, comercio, artículos, entrega y teléfono destino del cobro.
-- [ ] Diferenciar `PolicyEvaluation.ELIGIBLE` de `Order.APPROVED` (acción explícita del comprador), y registrar `ConsentRecord` con actor, fecha, importe, beneficiario y hash de orden.
-- [ ] Implementar transiciones válidas de `OrderStatus`.
-- [ ] Probar montos, cantidad, fechas, moneda, proveedor y oferta vencida.
-- [ ] Probar que un cambio posterior invalida la evaluación y el consentimiento anterior.
-- [ ] Agregar reglas de elegibilidad para comercio `ACTIVE`, reserva válida y TTL de oferta; la ausencia de datos críticos falla de forma segura.
-- [ ] Documentar reglas en `docs/architecture.md`.
+- [x] Configurar workspace TypeScript y Vitest.
+- [x] Crear schemas Zod y tipos de dominio.
+- [x] Implementar `evaluateOffer(intent, offer, context)` como función pura.
+- [x] Implementar snapshots y hash/versionado de condiciones, incluyendo importe, comercio, artículos, entrega y teléfono destino del cobro.
+- [x] Diferenciar `PolicyEvaluation.ELIGIBLE` de `Order.APPROVED` (acción explícita del comprador), y registrar `ConsentRecord` con actor, fecha, importe, beneficiario y hash de orden.
+- [x] Implementar transiciones válidas de `OrderStatus`.
+- [x] Probar montos, cantidad, fechas, moneda, proveedor y oferta vencida.
+- [x] Probar que un cambio posterior invalida la evaluación y el consentimiento anterior.
+- [x] Agregar reglas de elegibilidad para comercio `ACTIVE`, reserva válida y TTL de oferta; la ausencia de datos críticos falla de forma segura.
+- [x] Documentar reglas en `docs/architecture.md`.
 
 ### Gate G1
 
@@ -711,3 +711,9 @@ Si durante una fase surge un cambio de arquitectura o alcance, registrar en `doc
 **Límites no documentados públicamente:** payouts, transferencias salientes, reembolsos automáticos, escrow, split de fondos, cobros autónomos CoDi y una API documentada de estados de notificación bancaria entrega/rechazo. No inventar estas funciones.
 
 **Verificación pendiente con pey:** operación para terceros/multi-comercio bajo una API key; titularidad y obligaciones de las cuentas; reintentos/idempotencia de `POST`; gestión de expirados; propinas/comisiones y reversos en Links; campos exactos de respuestas susceptibles a cambios; habilitación bancaria y comportamiento en pago tardío.
+
+## Cierre G1 — 2026-11-07
+
+Core implementado y verificado sin proveedores, HTTP, DB ni frontend. Ver evidencia en `docs/progress.md`. Los estados internos de pagos no son estados publicados por pey. G2 y G3 siguen pendientes: no hay garantías persistentes de idempotencia o conciliación operativa.
+
+Correcciones a la revisión original v1.2: `GET /payment-link/{id}` incluye `partial`; el webhook de link publica solo `pending/processing/paid`. Los metadatos del recurso se devuelven bajo `metadata.externalMetadata` en las transacciones; los de un link consultado son un mapa directo. Ver `docs/pey-review-2026-11-07.md`.

@@ -41,3 +41,13 @@
 - **Fecha:** 2026-11-07
 - **Decisión:** una modificación de monto exige nueva evaluación y consentimiento; no actualizar en silencio links `pending`. `hasTip=false` para compras de monto cerrado.
 - **Estado:** aceptada.
+
+## ADR-008 — Reglas concretas de G1
+- Fecha: 2026-11-07.
+- Cantidad y unidad exactas, moneda MXN, ventanas con reloj inyectado. Oferta y reserva cubren TTL + margen explícito; igualdad con el vencimiento falla de forma segura.
+- Hash SHA-256 de JSON canónico y snapshot clonado/congelado. Es vínculo de contenido; no sustituye autenticación.
+- `mañana` produce fecha local; hora límite explícita obligatoria. No adivinar plazos.
+- QR y links modelados pero no habilitados por políticas en G1. Sin gateways, ni siquiera simulados.
+- Idempotencia como función pura en G1 por petición original del usuario; persistencia y exclusión mutua quedan en G2/G3. Se usa la nomenclatura de estados detallada en contratos v1.2, sobre los nombres alternativos del plan.
+- Estados y evidencia financiera: reducers confiables de dominio; firma, deduplicación duradera y conciliación pertenecen a G3/G4. Cumplimiento separado exige CONFIRMED.
+- La revisión oficial corrige la metadata y `partial`; no incorpora nuevas capacidades por inferencia.

@@ -1,4 +1,4 @@
-# AGENTS.md — Reglas persistentes de AgentPay OS para Codex
+# AGENTS.md — Reglas persistentes de AgentPay OS para Codex (v1.2)
 
 ## Contexto, orden de lectura y prioridades
 
@@ -47,3 +47,10 @@
 2. Actualizar `docs/progress.md` con fecha, archivos, comandos, resultados, evidencias y bloqueos.
 3. Mostrar un resumen de cambios de código y una lista corta de riesgos restantes.
 4. Declarar G1 como aprobado solo si se cumplieron todos sus criterios y **detenerse**.
+
+## Estado verificado al cerrar G1 (2026-11-07)
+
+- Core y reglas implementados; 47 pruebas y typecheck aprobados. No iniciar Fase 2 sin nueva instrucción del usuario.
+- Idempotencia en G1 es una decisión pura sobre registros suministrados; atomicidad, índices únicos y persistencia pertenecen a G2/G3.
+- Las transiciones financieras del core requieren evidencia de un servicio confiable futuro: no exponerlas directamente a agentes o clientes.
+- Ver correcciones documentales en `docs/pey-review-2026-11-07.md`, incluyendo `partial`, `metadata.externalMetadata` e identificadores `id`/`transactionId`.

@@ -53,7 +53,7 @@ Un webhook puede repetirse. Validar firma Standard Webhooks con **cuerpo origina
 
 ### Cuentas receptoras (`POST /bank-account`, `GET /bank-account/:id`)
 - La cuenta se registra con `codiStatus` `PENDING` y solo `ACTIVE` permite CoDi.
-- Referencia de tipo de cuenta describe `pending`, `processing`, `active`, `error` (ejemplos del webhook usan MAYÚSCULAS). Normalizar case-insensitive, conservar valor original.
+- La referencia vigente y OpenAPI describen `PENDING`, `PROCESSING`, `ACTIVE`, `ERROR` en MAYÚSCULAS. Si se añade tolerancia de mayúsculas, será una decisión del adaptador, no un contrato distinto del proveedor.
 - Hasta 5 días hábiles de activación comunicados por pey. En `ERROR`, consultar `GET`; el webhook `bank.account.updated` solo confirma `ACTIVE`.
 - Una API key puede estar asociada a una cuenta de pago CoDi y una Stripe en el portal; puede registrar cuentas adicionales por API. **Validar viabilidad legal/contractual para comercios independientes; técnicamente posible ≠ autorizado para operar**.
 - Tratar nombre legal, RFC, CLABE y otros datos de titularidad como datos personales/confidenciales. No escribirlos en logs.
@@ -102,3 +102,14 @@ Producción: `https://api.pey.mx`. Entorno sandbox dedicado: anunciado como **pr
 - Webhook cuenta: https://docs.pey.mx/docs/webhooks/bank-account/updated/
 - Alta API key: https://docs.pey.mx/docs/tutorials/getting-started/create-an-api-key/
 - Configuración webhook: https://docs.pey.mx/docs/tutorials/getting-started/set-up-webhooks/
+
+## Correcciones verificadas al implementar G1
+
+- Fuente de esquemas: https://docs.pey.mx/openapi.json (API 2026-10-20).
+- Consulta de link: `pending`, `processing`, `paid`, **`partial`**. El webhook enumera solo los primeros tres: no equiparar ambos contratos ni confirmar pagos parciales como completos.
+- `GET /transaction/{id}` y listados devuelven **`id`**; el webhook y las entradas resumidas de links devuelven **`transactionId`**.
+- La metadata enviada al crear un recurso regresa dentro de **`metadata.externalMetadata`** en transacciones/webhooks. La consulta del propio link devuelve `metadata` como mapa directo.
+- La actualización de link documenta redondeo half-up a dos decimales; AgentPay conservará centavos exactos y no dependerá de ese redondeo.
+- Solo componentes no cero pueden aparecer en `amountBreakdown` de transacciones del link; no asumir que todos los campos estarán presentes.
+
+Evidencias y discrepancias: `pey-review-2026-11-07.md`. Esta revisión no valida habilitación operativa.

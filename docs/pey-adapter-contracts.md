@@ -123,3 +123,7 @@ interface WebhookVerifier {
 - Link con `hasTip=true` o cargos no contemplados en orden de precio fijo → bloquear o reconciliar con política explícita, nunca asumir pago exacto.
 - QR abierto (`amount=0`) no elegible para checkout de importe cerrado.
 - Reserva expirada después de pago confirmado → dinero real registrado y excepción de fulfillment, no autodevolución.
+
+## Precisiones de la revisión G0-D / G1
+
+El adaptador futuro debe mapear `id` de consulta de transacción a `providerTransactionId`; no buscar un campo `transactionId` inexistente en esa respuesta. Para correlacionar datos adjuntados al recurso, leer `metadata.externalMetadata` en transacciones/webhooks y no `metadata.orderId`. La metadata del link consultado es directa. Tratar `partial` de consulta de link como incompleto y conservar la diferencia respecto al webhook. No implementar todavía estos adaptadores.

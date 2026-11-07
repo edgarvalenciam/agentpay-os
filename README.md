@@ -1,6 +1,6 @@
 # AgentPay OS — Codex Starter v1.2
 
-**Estado:** paquete de especificaciones y tareas listo para desarrollar con Codex. **No contiene código de aplicación ejecutable, credenciales, tests ejecutados ni pagos realizados.** Fecha: 2026-11-07.
+**Estado:** Fase 1 / G1 implementada y verificada: core puro, 47 pruebas y TypeScript estricto. Fase 0 documental revisada; validación bancaria pendiente. Sin frontend, credenciales ni pagos. Fecha: 2026-11-07.
 
 ## Objetivo
 
@@ -43,3 +43,15 @@ Infraestructura B2B2C para comercio iniciado por IA, validado por políticas det
 ## Qué hay que decidir con pey antes de V1 B2B2C
 
 Posibilidad contractual de registrar terceros bajo una sola API key, alta/habilitación de cuentas ajenas, prevención de duplicados upstream, campos de confirmación y rechazo, términos/comisiones por Payment Links y políticas de devolución. Ver `docs/pey-validation.md`.
+
+## Ejecutar el core
+
+Requisitos: Node.js 22+ y pnpm 11.25.0. Desde esta carpeta:
+
+```sh
+pnpm install --frozen-lockfile
+pnpm test
+pnpm typecheck
+```
+
+El paquete `@agentpay/core` está en `packages/core/src`. Las pruebas usan fixtures ficticios y no requieren variables de entorno. No existe servidor ni integración financiera. Ver `docs/architecture.md` y `docs/progress.md`.

@@ -6,14 +6,14 @@ Implementar un dominio autónomo **sin** dependencias de API, DB, OpenAI o pey. 
 
 ## Entregables
 
-- [ ] Monorepo mínimo `pnpm` con TypeScript `strict`, Zod, Vitest y paquete `packages/core`.
-- [ ] Tipos/validación de `PurchaseIntent`, `Offer`, `Merchant`, `MerchantPaymentAccount`, `Reservation`, `PolicyEvaluation`, `OrderSnapshot`, `ConsentRecord` y `PaymentMethod`.
-- [ ] Tipos `PaymentMethod`: `CODI_PUSH`, `CODI_QR`, `PAYMENT_LINK`, sin implementar gateway alguno.
-- [ ] `evaluateOffer(intent, offer, context)` **función pura** con razones y `policyVersion`.
-- [ ] Chequeos: presupuesto MXN y centavos, match de producto/cantidad, fecha y zona horaria explícitas, cuenta habilitada en operación CoDi, merchant activo, stock, reserva, plazo de entrega y oferta vigente.
-- [ ] Máquina de estados comercial separada de estados de pago. Consentimiento comercial ligado a hash/version de snapshot, incluyendo beneficiario y teléfono.
-- [ ] No asumir que una oferta seleccionada equivale a pago; impedir cobro desde core.
-- [ ] README con comandos para reproducir tests y resultados en `docs/progress.md`.
+- [x] Monorepo mínimo `pnpm` con TypeScript `strict`, Zod, Vitest y paquete `packages/core`.
+- [x] Tipos/validación de `PurchaseIntent`, `Offer`, `Merchant`, `MerchantPaymentAccount`, `Reservation`, `PolicyEvaluation`, `OrderSnapshot`, `ConsentRecord` y `PaymentMethod`.
+- [x] Tipos `PaymentMethod`: `CODI_PUSH`, `CODI_QR`, `PAYMENT_LINK`, sin implementar gateway alguno.
+- [x] `evaluateOffer(intent, offer, context)` **función pura** con razones y `policyVersion`.
+- [x] Chequeos: presupuesto MXN y centavos, match de producto/cantidad, fecha y zona horaria explícitas, cuenta habilitada en operación CoDi, merchant activo, stock, reserva, plazo de entrega y oferta vigente.
+- [x] Máquina de estados comercial separada de estados de pago. Consentimiento comercial ligado a hash/version de snapshot, incluyendo beneficiario y teléfono.
+- [x] No asumir que una oferta seleccionada equivale a pago; impedir cobro desde core.
+- [x] README con comandos para reproducir tests y resultados en `docs/progress.md`.
 
 ## Fixtures obligatorios
 

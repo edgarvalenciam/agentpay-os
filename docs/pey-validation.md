@@ -46,3 +46,9 @@
 **G0-R (operativo): BLOQUEADO / NO INICIADO.** Falta acceso al portal/credenciales, cuenta ACTIVE, teléfono CoDi, endpoint webhook y prueba real autorizada.
 
 Fuentes: enlaces oficiales listados en `docs/pey-capabilities.md`.
+
+## Revalidación independiente — 2026-11-07
+
+Se consultó el OpenAPI 2026-10-20 completo (11 operaciones), las cuatro familias de webhook, seguridad, configuración, alta, tipos, tutorial QR y changelog público. Se contrastó con el sitemap; índices de navegación y recursos de marca no añaden contratos financieros. Responsable: Codex. Ver `pey-review-2026-11-07.md` para fuentes y correcciones. No se llamó a `api.pey.mx` ni al portal.
+
+**Hallazgos nuevos:** consulta de link incluye `partial`; transacción completa usa `id`; metadata anidada en `externalMetadata`; cuenta bancaria usa estados mayúsculos. Idempotencia upstream, operación para terceros y eventos de rechazo siguen sin confirmación pública.
