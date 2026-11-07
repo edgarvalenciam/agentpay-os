@@ -85,3 +85,7 @@ El usuario completó la entrada local del secreto. Verificación por GET /health
 ## Configurador privado de API key — 2026-11-07
 
 Usuario solicitó un mecanismo similar al del secreto de webhook. Se agregó pey:configure-key y helper local .command con entrada oculta. Guardado atómico 0600, preservando configuración existente y pagos deshabilitados; sin red y sin imprimir valores. Entrada y guardado privados compartidos con configurador de webhook. Cinco pruebas focalizadas aprobadas y typecheck salida 0. No se ha solicitado ni recibido la API key en el chat; este cambio solo prepara su captura local por el usuario. No valida credenciales contra pey ni realiza cobros.
+
+## Confirmación de API key local — 2026-11-07
+
+Usuario completó configurador privado. Se verificaron únicamente indicadores: API key presente, secreto de webhook conservado, archivo regular con permisos 0600, ALLOW_REAL_PAYMENTS=false y PAYMENT_PROVIDER=mock. No se imprimieron valores ni se utilizó la key contra pey. Tras habilitar acceso de red de esta sesión, receptor local y URL HTTPS devolvieron 200/ready; webhook:up reutilizó la URL vigente sin reemplazarla. El primer chequeo local de la sesión no conectó; verificación posterior local y pública satisfactoria. Pendientes: validar credenciales mediante operación autorizada, adaptador de envío y conciliación real, y monto/beneficiario concretos antes de cualquier cobro.
