@@ -265,4 +265,3 @@ CREATE UNIQUE INDEX "ProviderTransaction_provider_transactionId_key" ON "Provide
 
 -- CreateIndex
 CREATE UNIQUE INDEX "PaymentEvent_provider_deliveryId_key" ON "PaymentEvent"("provider", "deliveryId");
-
