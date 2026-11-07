@@ -1,6 +1,6 @@
 # AgentPay OS — Codex Starter v1.2
 
-**Estado:** G1 y G2 implementados: core, API local, persistencia SQLite/Prisma, reservas, consentimiento y auditoría. 72 pruebas y TypeScript estricto aprobados. Sin frontend ni integración financiera. Fecha: 2026-11-07.
+**Estado:** G1, G2 y G3 implementados: core, API local, persistencia SQLite/Prisma, reservas, consentimiento y auditoría. 122 pruebas y TypeScript estricto aprobados. Sin frontend ni integración financiera. Fecha: 2026-11-07.
 
 ## Objetivo
 
@@ -9,10 +9,10 @@ Infraestructura B2B2C para comercio iniciado por IA, validado por políticas det
 ## Primeros pasos
 
 1. Abre esta carpeta en Codex y lee `AGENTS.md` y `docs/progress.md`.
-2. G1 y G2 ya están implementados. Ejecuta los comandos de reproducción de abajo.
+2. G1, G2 y G3 ya están implementados. Ejecuta los comandos de reproducción de abajo.
 3. `pnpm demo` demuestra API y persistencia sin banco ni frontend.
 4. El prompt `prompts/START_CODEX.md` corresponde al arranque histórico de G1; no es la tarea siguiente.
-5. Siguiente gate: G3, pagos simulados y conciliación. No activar pagos reales ni producción desde este paquete.
+5. Siguiente gate: G4, adaptador pey y requisitos operativos. No activar pagos reales ni producción desde este paquete.
 
 ## Archivos
 
@@ -69,4 +69,12 @@ pnpm demo
 
 `pnpm demo` demuestra por HTTP local una orden de $850, replay idempotente, reinicio y auditoría en una DB temporal. No usa credenciales reales ni envía pagos. Para servidor persistente y contratos ver `docs/api-contracts.md`. `pnpm db:migrate` aplica migraciones sin resetear; `pnpm db:seed` conserva datos existentes. Generar el cliente Prisma con `pnpm db:generate` después de instalar o cambiar el schema.
 
-G2 es local y de un proceso: autenticación demo por tokens de operador y escucha exclusiva en loopback. No es un despliegue productivo. Siguiente gate: G3, pagos simulados y conciliación, requiere nueva instrucción.
+G2 es local y de un proceso: autenticación demo por tokens de operador y escucha exclusiva en loopback. No es un despliegue productivo. G3 ya implementado; G4 requiere nueva instrucción y mantiene pagos reales deshabilitados.
+
+## Fase 3 — Demostración de pago simulado
+
+```sh
+pnpm demo:payments
+```
+
+Muestra solicitud pendiente → evento firmado → confirmación simulada → una notificación interna → recuperación tras reinicio, con duplicados ignorados. No necesita credenciales de pey ni mueve dinero. Contratos, escenarios UNKNOWN, permisos de operador, recuperación y pruebas: `docs/g3-mock-payments.md`. La firma mock no acredita compatibilidad bancaria.

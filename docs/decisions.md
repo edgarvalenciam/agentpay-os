@@ -75,3 +75,23 @@
 - Fecha: 2026-11-07. Estado: implementada en G2.
 - Una intención representa una compra; puede tener propuestas alternativas pero solo una orden aprobada. Índice único Order.intentId y revalidación transaccional evitan dos aprobaciones simultáneas incluso con distintas claves/propuestas.
 - Al aprobar, liberar reservas de propuestas alternativas de esa intención. Para repetir compra se crea una intención nueva. La prueba concurrente demuestra una respuesta 201, una 409 y una sola reserva activa.
+
+## ADR-012 — Envío en tres pasos y resultado incierto
+- Fecha: 2026-11-07. Implementada en G3.
+- Persistir intento, slot activo, referencia y respuesta 202 antes del gateway. La llamada se realiza fuera de transacción DB; un replay no vuelve a invocarla. Se bloquea cualquier segundo intento de la orden en G3.
+- Error de envío/respuesta perdida deja UNKNOWN. Al reiniciar, SUBMISSION_PENDING/CREATED huérfanos se tratan como inciertos, sin reenviar. Ledger durable propio del simulador permite recuperar una transacción aceptada; no se atribuye esta capacidad a pey.
+- Se acepta una confirmación verificada mientras el recibo de creación está en vuelo; no se rebaja luego a pendiente. Las transiciones del core contemplan callback temprano y recuperación de excepción por evidencia correcta.
+
+## ADR-013 — Protocolo mock aislado y efectos financieros
+- Fecha: 2026-11-07. Implementada solo para desarrollo local.
+- HMAC de desarrollo sobre cuerpo crudo, namespace mock, ventana de cinco minutos y secreto independiente. No es implementación de Standard Webhooks ni wire contract pey.
+- Conciliar importe entero exacto, moneda, orden, intento, cuenta interna, API key ID mock, referencia y transacción. UNKNOWN exige vínculo a ledger mock independiente de metadata del evento. Deduplicar entrega y efecto por transacción.
+- Evidencia financiera y cumplimiento separados: pago válido tardío confirma intento/transacción, pero orden EXCEPTION si no hay reserva/capacidad. Una compra pagada o bien consume inventario/reserva atómicamente, o alerta excepción; no se devuelve dinero automáticamente.
+- Controles de confirmación/rechazo/dispatch requieren token operador separado, no son permisos del comprador. Producción/proveedor real rechazados.
+
+## ADR-014 — Outbox con entrega local idempotente
+- Fecha: 2026-11-07. Implementada en G3.
+- Lease de 30 s, token de reclamación y reintentos exponenciales hasta 60 s. Sink simulado es MerchantNotification con eventId único. Confirmar entrega después de persistir bandeja; recuperable ante crash en medio.
+- Solo MOCK_ORDER_PAID / MOCK_FULFILLMENT_EXCEPTION producen notificación de pago/alerta. ORDER_APPROVED_INTERNAL no autoriza preparación.
+- Worker en servidor local cada segundo; pruebas y demos pueden despachar explícitamente. No se contacta un canal externo ni se afirma exactly-once externo.
+- Migración G3 añade columnas/tablas y reconstruye solo OutboxEvent para su default temporal; preserva snapshots, consentimiento y triggers. Test de upgrade con datos G2 valida continuidad.

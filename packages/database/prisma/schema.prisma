@@ -117,24 +117,26 @@ model PolicyEvaluation {
 }
 
 model Order {
-  id            String           @id
-  buyerId       String
-  buyer         Buyer            @relation(fields: [buyerId], references: [id])
-  merchantId    String
-  merchant      Merchant         @relation(fields: [merchantId], references: [id])
-  intentId      String           @unique
-  intent        PurchaseIntent   @relation(fields: [intentId], references: [id])
-  proposalId    String           @unique
-  proposal      Proposal         @relation(fields: [proposalId], references: [id])
-  reservationId String           @unique
-  reservation   Reservation      @relation(fields: [reservationId], references: [id])
-  status        String
-  createdAt     DateTime
-  snapshot      OrderSnapshot?
-  consent       ConsentRecord?
-  attempts      PaymentAttempt[]
-  events        AuditEvent[]
-  outbox        OutboxEvent[]
+  fulfillmentStatus String                 @default("RESERVED")
+  notifications     MerchantNotification[]
+  id                String                 @id
+  buyerId           String
+  buyer             Buyer                  @relation(fields: [buyerId], references: [id])
+  merchantId        String
+  merchant          Merchant               @relation(fields: [merchantId], references: [id])
+  intentId          String                 @unique
+  intent            PurchaseIntent         @relation(fields: [intentId], references: [id])
+  proposalId        String                 @unique
+  proposal          Proposal               @relation(fields: [proposalId], references: [id])
+  reservationId     String                 @unique
+  reservation       Reservation            @relation(fields: [reservationId], references: [id])
+  status            String
+  createdAt         DateTime
+  snapshot          OrderSnapshot?
+  consent           ConsentRecord?
+  attempts          PaymentAttempt[]
+  events            AuditEvent[]
+  outbox            OutboxEvent[]
 }
 
 model OrderSnapshot {
@@ -181,31 +183,45 @@ model AuditEvent {
 }
 
 model OutboxEvent {
-  id        String   @id
-  orderId   String
-  order     Order    @relation(fields: [orderId], references: [id])
-  type      String
-  payload   String
-  status    String   @default("PENDING")
-  createdAt DateTime
+  effectKey   String?   @unique
+  attempts    Int       @default(0)
+  availableAt DateTime  @default(now())
+  leaseUntil  DateTime?
+  leaseToken  String?
+  deliveredAt DateTime?
+  lastError   String?
+  id          String    @id
+  orderId     String
+  order       Order     @relation(fields: [orderId], references: [id])
+  type        String
+  payload     String
+  status      String    @default("PENDING")
+  createdAt   DateTime
 
   @@index([status, createdAt])
 }
 
 model PaymentAttempt {
-  id                   String             @id
-  orderId              String
-  order                Order              @relation(fields: [orderId], references: [id])
-  method               String
-  provider             String
-  requestedAmountMinor Int
-  currency             String
-  status               String
-  activeSlot           String?            @unique
-  idempotencyKey       String             @unique
-  createdAt            DateTime
-  resources            ProviderResource[]
-  events               PaymentEvent[]
+  apiKeyId              String?
+  beneficiaryAccountId  String?
+  numRef                String?
+  expiresAt             DateTime?
+  providerTransactionId String?            @unique
+  codiId                String?
+  mockSubmissions       MockSubmission[]
+  id                    String             @id
+  orderId               String
+  order                 Order              @relation(fields: [orderId], references: [id])
+  method                String
+  provider              String
+  requestedAmountMinor  Int
+  currency              String
+  status                String
+  activeSlot            String?            @unique
+  idempotencyKey        String             @unique
+  createdAt             DateTime
+  resources             ProviderResource[]
+  events                PaymentEvent[]
 }
 
 model ProviderResource {
@@ -234,6 +250,8 @@ model ProviderTransaction {
 }
 
 model PaymentEvent {
+  type        String         @default("LEGACY")
+  outcome     String         @default("RECORDED")
   id          String         @id
   attemptId   String
   attempt     PaymentAttempt @relation(fields: [attemptId], references: [id])
@@ -243,4 +261,36 @@ model PaymentEvent {
   createdAt   DateTime
 
   @@unique([provider, deliveryId])
+}
+
+model MockSubmission {
+  id                   String         @id
+  attemptId            String
+  attempt              PaymentAttempt @relation(fields: [attemptId], references: [id])
+  transactionId        String         @unique
+  codiId               String
+  orderId              String
+  apiKeyId             String
+  beneficiaryAccountId String
+  amountMinor          Int
+  currency             String
+  numRef               String
+  status               String
+  createdAt            DateTime
+  datePaid             DateTime?
+
+  @@index([attemptId])
+}
+
+model MerchantNotification {
+  id         String   @id
+  eventId    String   @unique
+  orderId    String
+  order      Order    @relation(fields: [orderId], references: [id])
+  merchantId String
+  type       String
+  payload    String
+  createdAt  DateTime
+
+  @@index([merchantId, createdAt])
 }

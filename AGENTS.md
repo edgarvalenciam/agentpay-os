@@ -60,3 +60,13 @@
 El usuario indicó «avacemos o que hace falta?» tras definir Fase 2; autoriza implementar G2. Las restricciones de primera sesión/G1 no impiden esta fase posterior. Se permiten API, Prisma y SQLite locales; se mantienen prohibidos frontend, llamadas financieras y credenciales reales.
 
 G2 implementa API/auth local, reservas transaccionales, persistencia, idempotencia, auditoría/outbox interno y tablas preparatorias de pagos. No iniciar G3 ni proveedores simulados sin nueva instrucción. Ver `docs/api-contracts.md`, `docs/progress.md` y ADR-009/010. Los logs HTTP y Prisma permanecen desactivados para no filtrar cuerpos, tokens ni PII.
+
+## Autorización y estado de Fase 3 — 2026-11-07
+
+El usuario autorizó «continuemos con el siguiente fase» tras G2. Se permite únicamente G3: gateway CODI_PUSH mock, eventos de desarrollo firmados, conciliación, outbox y pruebas. No iniciar G4 ni ejecutar cobros reales.
+
+- Mantener environment=mock / SIMULADO en efectos y respuestas financieras. El HMAC del protocolo mock NO implementa Standard Webhooks pey.
+- Confirm/reject/dispatch son controles de operador separados de tokens comprador/comercio. Deshabilitados sin MOCK_CONTROL_TOKEN y ausentes en producción.
+- SUBMISSION_PENDING huérfano pasa a UNKNOWN al reiniciar; nunca reenviar automáticamente. La aceptación idempotente 202 es histórica; consultar GET para estado actual.
+- Pago tardío confirmado conserva evidencia y entra a excepción de cumplimiento si no hay reserva/stock. Consumo de inventario y outbox deben ser atómicos.
+- Outbox entrega a bandeja local persistente; no enviar email, mensajes ni tráfico externo. Ver `docs/g3-mock-payments.md`.

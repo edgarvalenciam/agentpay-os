@@ -1,0 +1,50 @@
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
+import { randomBytes } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
+import assert from 'node:assert/strict';
+import { Database } from '../packages/database/src/index.js';
+import { seedDemo } from '../packages/database/src/seed.js';
+import { buildApp } from '../apps/api/src/index.js';
+import { MockCodiPushGateway, signMockEvent } from '../packages/integrations/src/index.js';
+let address='';
+async function request(input:{method?:string;url:string;headers:Record<string,string>;payload?:unknown}){
+  const response=await fetch(address+input.url,{method:input.method??'GET',headers:{...input.headers,'content-type':'application/json'},...(input.payload!==undefined?{body:JSON.stringify(input.payload)}:{})});
+  const body=await response.text();return {statusCode:response.status,json:<T=unknown>()=>JSON.parse(body) as T};
+}
+const dir=await mkdtemp(join(tmpdir(),'agentpay-demo-')),url='file:'+join(dir,'demo.db');
+await writeFile(join(dir,'demo.db'),'',{mode:0o600});
+execFileSync(process.execPath,[resolve('node_modules/prisma/build/index.js'),'migrate','deploy','--schema','packages/database/prisma/schema.prisma'],{env:{...process.env,DATABASE_URL:url},stdio:'pipe'});
+let db=new Database(url);let app:ReturnType<typeof buildApp>|undefined;
+try{
+  const now=new Date().toISOString();await seedDemo(db,now);const credentials=[{token:randomBytes(32).toString('hex'),actor:{role:'BUYER' as const,id:'buyer-demo'}},{token:randomBytes(32).toString('hex'),actor:{role:'MERCHANT' as const,id:'merchant-demo'}}];
+  const webhookSecret=randomBytes(32).toString('hex'),controlToken=randomBytes(32).toString('hex');
+  let gateway=new MockCodiPushGateway(db,()=>new Date().toISOString());
+  const config=()=>({db,credentials,mockPayments:{gateway,webhookSecret,apiKeyId:'mock-api-key',controlToken}});
+  const headers={authorization:'Bearer '+credentials[0]!.token,'idempotency-key':'demo-intent-key'};
+  app=buildApp(config());address=await app.listen({host:'127.0.0.1',port:0});
+  const response=await request({method:'POST',url:'/v1/intents',headers,payload:{originalText:'2 kg café, máximo $1,000',productId:'coffee',category:'specialty',quantity:2,unit:'kg',maxAmountMinor:100000,currency:'MXN',deliveryDeadline:new Date(Date.parse(now)+2*86400000).toISOString(),timezone:'America/Mexico_City'}});assert.equal(response.statusCode,201);const intent=response.json<{id:string}>();
+  const proposed=await request({method:'POST',url:`/v1/intents/${intent.id}/proposals`,headers:{...headers,'idempotency-key':'demo-proposal-key'},payload:{offerId:'coffee-850'}});assert.equal(proposed.statusCode,201);const p=proposed.json<{id:string;snapshotHash:string}>();
+  const payload={proposalId:p.id,snapshotHash:p.snapshotHash,approved:true};const orderHeaders={...headers,'idempotency-key':'demo-order-key'};
+  const created=await request({method:'POST',url:'/v1/orders',headers:orderHeaders,payload});assert.equal(created.statusCode,201);const order=created.json<{id:string;status:string}>();assert.equal(order.status,'APPROVED');
+  const replay=await request({method:'POST',url:'/v1/orders',headers:orderHeaders,payload});assert.deepEqual(replay.json(),created.json());
+  const paymentPayload={snapshotHash:p.snapshotHash,approved:true};
+  const paymentHeaders={...headers,'idempotency-key':'demo-payment-key'};
+  const submitted=await request({method:'POST',url:`/v1/orders/${order.id}/payment-requests`,headers:paymentHeaders,payload:paymentPayload});assert.equal(submitted.statusCode,202);
+  const attempt=submitted.json<{id:string}>();
+  const pending=await request({url:`/v1/orders/${order.id}/payments`,headers});assert.equal(pending.json<{orderStatus:string}>().orderStatus,'PAYMENT_PENDING');
+  const wire=await gateway.notice(attempt.id,true),raw=Buffer.from(JSON.stringify(wire));
+  const eventHeaders={'content-type':'application/mock-event+json',...signMockEvent(raw,webhookSecret,'mock-event-terminal-demo',String(Math.floor(Date.now()/1000)))};
+  const confirmed=await fetch(address+'/v1/test-only/mock-webhook',{method:'POST',headers:eventHeaders,body:raw});assert.equal(confirmed.status,200);assert.equal((await confirmed.json() as {outcome:string}).outcome,'CONFIRMED');
+  const duplicate=await fetch(address+'/v1/test-only/mock-webhook',{method:'POST',headers:eventHeaders,body:raw});assert.equal((await duplicate.json() as {duplicate:boolean}).duplicate,true);
+  await request({method:'POST',url:'/v1/test-only/outbox/dispatch',headers:{'x-mock-control-token':controlToken},payload:{}});
+  const notifications=await request({url:'/v1/merchants/merchant-demo/notifications',headers:{authorization:'Bearer '+credentials[1]!.token}});assert.equal(notifications.json<unknown[]>().length,1);
+  const merchantOrders=await request({url:'/v1/merchants/merchant-demo/orders',headers:{authorization:'Bearer '+credentials[1]!.token}});assert.ok(merchantOrders.json<{id:string;status:string;label:string}[]>().some(row=>row.id===order.id&&row.status==='PAID'&&row.label==='SIMULADO'));
+  await app.close();await db.close();db=new Database(url);gateway=new MockCodiPushGateway(db,()=>new Date().toISOString());app=buildApp(config());address=await app.listen({host:'127.0.0.1',port:0});
+  const recovered=await request({url:`/v1/orders/${order.id}`,headers});assert.equal(recovered.json<{status:string}>().status,'PAID');
+  const events=await request({url:`/v1/orders/${order.id}/events`,headers});assert.ok(events.json<unknown[]>().length>=6);
+  assert.equal(await db.client.paymentAttempt.count(),1);assert.equal(await db.client.mockSubmission.count(),1);assert.equal(await db.client.providerTransaction.count(),1);assert.equal(await db.client.merchantNotification.count(),1);
+  const paymentReplay=await request({method:'POST',url:`/v1/orders/${order.id}/payment-requests`,headers:paymentHeaders,payload:paymentPayload});assert.deepEqual(paymentReplay.json(),submitted.json());assert.equal(await db.client.mockSubmission.count(),1);
+  console.log('G3 SIMULADO: orden $850, solicitud pendiente, evento firmado, pago conciliado, duplicado ignorado, una notificación interna y recuperación tras reinicio. Operaciones bancarias reales: 0.');
+}finally{await app?.close();await db.close();await rm(dir,{recursive:true,force:true});}

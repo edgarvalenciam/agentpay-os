@@ -38,6 +38,9 @@ importers:
       '@agentpay/database':
         specifier: workspace:*
         version: link:../../packages/database
+      '@agentpay/integrations':
+        specifier: workspace:*
+        version: link:../../packages/integrations
       fastify:
         specifier: 5.6.2
         version: 5.6.2
@@ -72,6 +75,18 @@ importers:
       prisma:
         specifier: 6.19.3
         version: 6.19.3(typescript@5.9.3)
+
+  packages/integrations:
+    dependencies:
+      '@agentpay/core':
+        specifier: workspace:*
+        version: link:../core
+      '@agentpay/database':
+        specifier: workspace:*
+        version: link:../database
+      zod:
+        specifier: 3.25.76
+        version: 3.25.76
 
 packages:
 

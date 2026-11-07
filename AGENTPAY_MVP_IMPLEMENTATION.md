@@ -2,7 +2,7 @@
 
 **Versión:** 1.2 — inventario integral de API pey y plan de implementación (07-nov-2026)  
 **Fecha:** 2026-11-07  
-**Estado:** G1/G2 implementados y verificados; G0-D revisado; G0-R y Fases 3–7 pendientes
+**Estado:** G1/G2/G3 implementados y verificados; G0-D revisado; G0-R y Fases 4–7 pendientes
 **Objetivo:** Construir y demostrar una compra iniciada por IA, validada por políticas deterministas y pagada mediante CoDi Push a través de pey, con confirmación financiera verificable.
 
 > **Principio:** El agente propone; el core valida; el comprador solicita el cobro y autoriza en su banco; el proveedor financiero comunica el resultado; AgentPay concilia; el comercio cumple la orden.
@@ -62,7 +62,7 @@
 | 0 | Factibilidad pey/CoDi y contratos | Documental verificado; operativo pendiente | G0-D / G0-R |
 | 1 | Dominio y motor de políticas | Completo: 47 tests y typecheck | G1 |
 | 2 | API, persistencia y órdenes | Completo: API local, DB, reservas y auditoría | G2 |
-| 3 | Orquestación de pagos simulada y conciliación | ☐ Pendiente | G3 |
+| 3 | Orquestación de pagos simulada y conciliación | Completo: mock, conciliación y outbox local | G3 |
 | 4 | Integración real pey/CoDi | ☐ Pendiente | G4 |
 | 5 | Agente OpenAI | ☐ Pendiente | G5 |
 | 6 | Frontend comprador/comercio | ☐ Pendiente | G6 |
@@ -365,20 +365,20 @@ Los endpoints `test-only` solo existen en entorno de desarrollo/test; prohibidos
 
 ### Checklist
 
-- [ ] Implementar interfaz `PaymentProvider`.
-- [ ] Implementar `MockPaymentProvider` y respuestas realistas, sin fingir ser pey; cada evento debe estar marcado `environment=mock`.
-- [ ] Garantizar un único intento activo por orden, lock/índice único y claves idempotentes por actor/ruta/cuerpo.
-- [ ] Introducir `PAYMENT_PROVIDER=mock|pey` y `ALLOW_REAL_PAYMENTS=false` por defecto; la activación de pagos reales requiere configuración deliberada del servidor.
-- [ ] Guardar intento antes de llamar al proveedor; diseñar recuperación ante timeout de envío y reinicio del proceso; usar `SUBMISSION_UNKNOWN`.
-- [ ] Proteger contra creación de cobro si oferta o reserva ya venció; registrar consentimiento comercial sobre snapshot exacto.
-- [ ] Implementar recepción de evento, validación, deduplicación (`webhook-id` cuando exista) y conciliación, con el cuerpo raw disponible para firma.
-- [ ] Usar una tabla outbox para notificación al comercio, con procesamiento idempotente/reintentos; DB y envío externo no son una única transacción.
-- [ ] Confirmar coincidencia de monto, moneda, `transactionId`, `numRef`, metadata `orderId`, beneficiario esperado e intento. Tratar `bankAccountId` opcional según cómo fue configurada la solicitud.
-- [ ] Normalizar MXN decimal a centavos usando conversión segura y rechazar importes con precisión inválida.
-- [ ] Persistir evento y transición en una transacción atómica.
-- [ ] Gestionar webhooks repetidos, fuera de orden, tardíos y con importes incorrectos.
-- [ ] Notificar al comercio únicamente después de confirmación válida.
-- [ ] Registrar eventos de auditoría sin secretos ni PII innecesaria.
+- [x] Implementar interfaz `PaymentProvider`.
+- [x] Implementar `MockPaymentProvider` y respuestas realistas, sin fingir ser pey; cada evento debe estar marcado `environment=mock`.
+- [x] Garantizar un único intento activo por orden, lock/índice único y claves idempotentes por actor/ruta/cuerpo.
+- [x] Introducir `PAYMENT_PROVIDER=mock|pey` y `ALLOW_REAL_PAYMENTS=false` por defecto; la activación de pagos reales requiere configuración deliberada del servidor.
+- [x] Guardar intento antes de llamar al proveedor; diseñar recuperación ante timeout de envío y reinicio del proceso; usar `SUBMISSION_UNKNOWN`.
+- [x] Proteger contra creación de cobro si oferta o reserva ya venció; registrar consentimiento comercial sobre snapshot exacto.
+- [x] Implementar recepción de evento, validación, deduplicación (`webhook-id` cuando exista) y conciliación, con el cuerpo raw disponible para firma.
+- [x] Usar una tabla outbox para notificación al comercio, con procesamiento idempotente/reintentos; DB y envío externo no son una única transacción.
+- [x] Confirmar coincidencia de monto, moneda, `transactionId`, `numRef`, metadata `orderId`, beneficiario esperado e intento. Tratar `bankAccountId` opcional según cómo fue configurada la solicitud.
+- [x] Normalizar MXN decimal a centavos usando conversión segura y rechazar importes con precisión inválida.
+- [x] Persistir evento y transición en una transacción atómica.
+- [x] Gestionar webhooks repetidos, fuera de orden, tardíos y con importes incorrectos.
+- [x] Notificar al comercio únicamente después de confirmación válida.
+- [x] Registrar eventos de auditoría sin secretos ni PII innecesaria.
 
 ### Gate G3
 
@@ -721,3 +721,7 @@ Correcciones a la revisión original v1.2: `GET /payment-link/{id}` incluye `par
 ## Cierre G2 — 2026-11-07
 
 API local y SQLite/Prisma implementados. 72 pruebas aprobadas (47 core + 25 integración); migraciones y demo HTTP con reinicio verificadas. Auth local por actor, reserva transaccional, aprobación ligada al hash y auditoría/outbox persistentes. No se envían cobros ni notificaciones al comercio. Ver `docs/progress.md` y `docs/api-contracts.md` para evidencias y límites. G3 no iniciado.
+
+## Cierre G3 — 2026-11-07
+
+Gateway CODI_PUSH simulado, solicitud persistida antes del envío, UNKNOWN sin reintento, webhook HMAC de desarrollo separado de pey, conciliación y outbox/bandeja local implementados. 122 pruebas, typecheck y demo HTTP de pago simulado aprobados. No hay frontend, credenciales reales ni operaciones bancarias. La firma oficial Standard Webhooks sigue en G4; ver `docs/g3-mock-payments.md`.

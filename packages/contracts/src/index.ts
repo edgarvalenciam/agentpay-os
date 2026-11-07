@@ -5,3 +5,4 @@ export const ProposeSchema = z.object({offerId:z.string().min(1),method:PaymentM
 export const CreateOrderSchema = z.object({proposalId:z.string().min(1),snapshotHash:z.string().regex(/^[a-f0-9]{64}$/),approved:z.literal(true)}).strict();
 export const EvaluateSchema = z.object({intentId:z.string().min(1)}).strict();
 export const IdempotencyKeySchema = z.string().min(8).max(128).regex(/^[a-zA-Z0-9_-]+$/);
+export const RequestPaymentSchema=z.object({snapshotHash:z.string().regex(/^[a-f0-9]{64}$/),approved:z.literal(true),method:z.literal('CODI_PUSH').default('CODI_PUSH')}).strict();

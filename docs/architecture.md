@@ -25,3 +25,9 @@ Las entradas representan hechos suministrados por un backend confiable, no afirm
 El servicio serializa el flujo de idempotencia → disponibilidad → reserva/validación → persistencia de evidencia dentro de una transacción SQLite. Las consultas también usan esa unidad de trabajo para no competir con escrituras del proceso local. El servidor impide dos instancias sobre el mismo archivo con lock. No iniciar más de una Database activa sobre un archivo desde otros scripts; detener API para migrar/seed. Migrar a PostgreSQL y control transaccional apropiado antes de operación multinstancia.
 
 Pagos, firma, conciliación y despacho de outbox no están implementados. Las tablas de intentos/recursos/transacciones/eventos existen para G3; sus fixtures de integración únicamente prueban unicidad y cardinalidad.
+
+## Extensión G3
+
+`core/reconciliation.ts` define puerto de envío, dinero decimal exacto y cotejo determinista de avisos. `integrations` contiene MockCodiPushGateway y firma HMAC de desarrollo, sin HTTP a proveedor. `api/payment-service.ts` admite intentos con commit antes del envío, recibe avisos crudos, confirma/conciliación y recupera UNKNOWN por ledger mock. `api/outbox.ts` entrega a bandeja local con leases, reintentos y deduplicación durable.
+
+La transacción de confirmación registra pago/orden, reserva e inventario y crea outbox; la entrega ocurre después. Webhook y recibo concurrentes no rebajan estados confirmados. Upgrade G2→G3 preserva evidencia inmutable. Ver `g3-mock-payments.md` para contratos, permisos y límites. No hay adaptador pey ni verificador Standard Webhooks todavía.

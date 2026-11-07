@@ -8,7 +8,7 @@
 | 0 — Pey operativo (G0-R) | NO INICIADO | — | credenciales, cuenta ACTIVE, pagador y consentimiento |
 | 1 — Core (G1) | APROBADO | 47 tests; typecheck sin errores | Ninguno para G1 |
 | 2 — API/DB (G2) | APROBADO | 72 tests, typecheck, 3 migraciones y demo HTTP | Local, un proceso; sin pagos |
-| 3 — Mock/conciliación (G3) | NO INICIADA | — | — |
+| 3 — Mock/conciliación (G3) | APROBADO | 122 tests, typecheck, demo HTTP SIMULADO | No valida integración bancaria |
 | 4 — Pey real (G4) | NO INICIADA | — | G0-R pendiente |
 | 5 — OpenAI (G5) | NO INICIADA | — | — |
 | 6 — Frontend (G6) | NO INICIADA | — | — |
@@ -48,3 +48,18 @@ Codex debe anexar para cada gate: fecha, archivos modificados, comandos ejecutad
 - Privacidad: tokens fuera del repo y teléfonos demo sintéticos; orden/eventos/outbox no exponen teléfono, texto libre ni datos bancarios. HTTP/Prisma sin logs. DB local no cifrada; no apto para datos reales/producción.
 - G2 aprobado; G3 no iniciado. No frontend, OpenAI, llamadas pey, webhooks operativos, envío de pagos ni credenciales reales. No se publicó a remoto.
 - Bloqueos para G2: ninguno. Límites: SQLite local un proceso, seed/CLI con servidor detenido, lock residual tras cierre forzado se revisa manualmente, auth solo demo, listados limitados a 100 sin paginación todavía. Outbox no despachado. Próximo gate G3 implementa mock explícito, conciliación y despacho idempotente; G0-R sigue pendiente para pagos reales.
+
+## Ejecución 2026-11-07 — Fase 3 / G3
+
+- Autorización: «continuemos con el siguiente fase». Base `f2549de` (G2); implementación identificable por commit `feat(payments): complete G3 mock reconciliation and durable outbox`.
+- Archivos: `core/reconciliation.ts` y transiciones; paquete `integrations` mock/firma; `api/payment-service.ts`, `api/outbox.ts`, rutas/arranque; schemas compartidos, schema Prisma y migración 004; `tests/payments.test.ts`, tests de dinero y demo HTTP; documentación/AGENTS/roadmap actualizados.
+- Gateway CODI_PUSH solo mock: ledger durable e IDs mock-, sin llamadas HTTP al proveedor. Commit del intento, slot, auditoría y respuesta 202 antes de submit. Timeout deja UNKNOWN; misma clave repite aceptación sin submit y otra clave se bloquea. Startup no reenvía intentos huérfanos.
+- Evento de desarrollo HMAC sobre bytes originales; protocolo propio, no Standard Webhooks pey. Correlación de monto/moneda/cuenta/API key/orden/intento/referencia/transacción, fecha y ledger. Deduplicación durable por entrega y transacción; confirmación temprana no se rebaja al llegar recibo.
+- Transacción atómica para evento, pago, orden, inventario/reserva, auditoría y outbox. Confirmado tardío conserva pago pero entra a FULFILLMENT_EXCEPTION. No devolución ni preparación automática.
+- Worker con lease/reintentos entrega a MerchantNotification (bandeja local simulada), dedup eventId incluso si falla entre entrega y acuse. No se envían mensajes a personas ni servicios externos.
+- Comandos ejecutados: `pnpm install` / `pnpm install --frozen-lockfile`; `pnpm db:generate`; `pnpm db:migrate` (**4 migraciones**, actualización incremental local); `pnpm typecheck` (**salida 0**); `pnpm test` (**122/122**, cuatro archivos: 47 core inicial + 14 dinero + 25 G2 + 36 G3/upgrade); `pnpm demo` (regresión G2 sin pagos); `pnpm demo:payments` (flujo HTTP simulado completo con reinicio y una notificación); `git diff --cached --check` en cierre.
+- Casos adversos aprobados: 8 solicitudes simultáneas → 1 submit; claves/cuerpos en conflicto; timeout antes/después de aceptación y reinicio; intento huérfano; precio/beneficiario/teléfono/stock/cuenta/reserva/consentimiento cambiado; acceso ajeno/operador; firma ausente/alterada/vencida/futura/otro secreto; montos inexactos y correlación incorrecta; evento real bloqueado; duplicados entrega/transacción; callback antes de recibo; falta de autorización no equivale a fallo pey; pago tardío; recuperación por consulta; outbox con entrega sin acuse y lease vencido.
+- Upgrade validado con una DB G2 que contiene orden, snapshot, consentimiento, auditoría y outbox: datos y restricciones/triggers inmutables conservados, sin violaciones de claves foráneas. Migración 004 no modifica las tres migraciones anteriores.
+- Incidencias: instalación offline no pudo verificar metadata de dependencias existentes; instalación normal posterior completada tras acceso de red. No se añadieron SDKs financieros ni dependencias de firma. Primera ejecución de suite G3: 121/121; agregada prueba de upgrade: 122/122; verificación final de etiquetas: 122/122. Tras añadir etiqueta mock a recuperación de startup, regresión focalizada de pagos 36/36 y typecheck aprobados.
+- G3 aprobado. Sin frontend, OpenAI, claves pey, webhook pey operativo ni operaciones bancarias reales. Mocks y respuestas etiquetados SIMULADO; controles requieren token distinto del comprador.
+- Bloqueos G3: ninguno. Límites: servidor y DB locales, un proceso, firma mock distinta de pey, sink de notificaciones solo local, sin garantía exactly-once externa. G4 no iniciado; contratos reales, Standard Webhooks, habilitación y prueba bancaria autorizada siguen pendientes. No se publicó a remoto.

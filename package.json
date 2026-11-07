@@ -9,7 +9,8 @@
     "db:migrate": "tsx scripts/migrate.ts",
     "db:seed": "tsx packages/database/src/seed-cli.ts",
     "dev:api": "tsx apps/api/src/server.ts",
-    "demo": "tsx scripts/demo.ts"
+    "demo": "tsx scripts/demo.ts",
+    "demo:payments": "tsx scripts/demo-payments.ts"
   },
   "devDependencies": {
     "typescript": "5.9.3",

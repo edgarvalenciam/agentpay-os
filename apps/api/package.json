@@ -9,6 +9,7 @@
     "zod": "3.25.76",
     "@agentpay/core": "workspace:*",
     "@agentpay/database": "workspace:*",
-    "@agentpay/contracts": "workspace:*"
+    "@agentpay/contracts": "workspace:*",
+    "@agentpay/integrations": "workspace:*"
   }
 }

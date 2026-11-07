@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
-import { PurchaseIntentSchema, OfferSchema, MerchantSchema, MerchantPaymentAccountSchema, OrderSnapshotSchema, createSnapshot, evaluateOffer, fingerprint, recordConsent, transitionOrder, type EvaluationContext, type OrderSnapshot, type PurchaseIntent } from '@agentpay/core';
+import { PurchaseIntentSchema, OfferSchema, MerchantSchema, MerchantPaymentAccountSchema, OrderSnapshotSchema, createSnapshot, evaluateOffer, fingerprint, recordConsent, transitionOrder, ConsentRecordSchema, canRequestPayment, type EvaluationContext, type OrderSnapshot, type PurchaseIntent } from '@agentpay/core';
 import type { UnitOfWork, Tx } from '@agentpay/database';
 import { CreateIntentSchema, ProposeSchema, CreateOrderSchema } from '@agentpay/contracts';
 export type Actor = {role:'BUYER';id:string} | {role:'MERCHANT';id:string};
@@ -9,7 +9,7 @@ export interface Result { status:number; body:unknown }
 function buyer(actor: Actor) { if (actor.role !== 'BUYER') throw new ApiError(403,'BUYER_REQUIRED'); return actor.id; }
 function missing(): never { throw new ApiError(404,'NOT_FOUND'); }
 function summary(snapshot: OrderSnapshot) {
-  return {orderId:snapshot.orderId,version:snapshot.version,method:snapshot.method,merchantId:snapshot.merchant.id,
+  return {environment:snapshot.account.provider==='mock'?'mock':'unconfigured',label:snapshot.account.provider==='mock'?'SIMULADO':'NO_DISPONIBLE',orderId:snapshot.orderId,version:snapshot.version,method:snapshot.method,merchantId:snapshot.merchant.id,
     productId:snapshot.offer.productId,quantity:snapshot.offer.quantity,unit:snapshot.offer.unit,
     amountMinor:snapshot.offer.amountMinor,currency:snapshot.offer.currency,deliveryAt:snapshot.offer.deliveryAt,
     beneficiaryAccountId:snapshot.account.id,beneficiaryDisplayName:snapshot.account.beneficiaryDisplayName,
@@ -103,7 +103,7 @@ export class CommerceService {
       await tx.orderSnapshot.create({data:{orderId:proposal.orderId,version:current.version,hash:proposal.snapshotHash,data:JSON.stringify(current)}});
       await tx.consentRecord.create({data:{id:randomUUID(),orderId:proposal.orderId,actorId:buyerId,snapshotHash:consent.snapshotHash,acceptedAt:new Date(now),data:JSON.stringify(consent)}});
       await tx.auditEvent.createMany({data:['POLICY_REVALIDATED','RESERVATION_HELD','BUYER_CONSENT_RECORDED','ORDER_APPROVED'].map(type=>({id:randomUUID(),orderId:proposal.orderId,actorId:buyerId,type,data:JSON.stringify({snapshotHash:proposal.snapshotHash,policyVersion:current.policyVersion}),createdAt:new Date(now)}))});
-      await tx.outboxEvent.create({data:{id:randomUUID(),orderId:proposal.orderId,type:'ORDER_APPROVED_INTERNAL',payload:JSON.stringify({orderId:proposal.orderId}),createdAt:new Date(now)}});
+      await tx.outboxEvent.create({data:{id:randomUUID(),orderId:proposal.orderId,type:'ORDER_APPROVED_INTERNAL',payload:JSON.stringify({orderId:proposal.orderId}),createdAt:new Date(now),availableAt:new Date(now)}});
       return {status:201,body:{id:proposal.orderId,status,snapshotHash:proposal.snapshotHash,snapshot:summary(current)}};
     });
   }
@@ -113,7 +113,23 @@ export class CommerceService {
   }
   getOrder(actor:Actor,id:string){return this.db.read(async tx=>{const order=await this.ownedOrder(tx,id,actor);return {id:order.id,status:order.status,snapshotHash:order.snapshot!.hash,snapshot:summary(OrderSnapshotSchema.parse(JSON.parse(order.snapshot!.data)))};});}
   getEvents(actor:Actor,id:string){return this.db.read(async tx=>{await this.ownedOrder(tx,id,actor);const events=await tx.auditEvent.findMany({where:{orderId:id},orderBy:[{createdAt:'asc'},{id:'asc'}],take:100});return events.map(e=>({id:e.id,type:e.type,data:JSON.parse(e.data),createdAt:e.createdAt}));});}
-  merchantOrders(actor:Actor,merchantId:string){if(actor.role!=='MERCHANT'||actor.id!==merchantId)throw new ApiError(403,'MERCHANT_REQUIRED');return this.db.read(tx=>tx.order.findMany({where:{merchantId},select:{id:true,status:true,createdAt:true},take:100,orderBy:{createdAt:'desc'}}));}
+  merchantOrders(actor:Actor,merchantId:string){if(actor.role!=='MERCHANT'||actor.id!==merchantId)throw new ApiError(403,'MERCHANT_REQUIRED');return this.db.read(async tx=>(await tx.order.findMany({where:{merchantId},select:{id:true,status:true,fulfillmentStatus:true,createdAt:true,snapshot:{select:{data:true}}},take:100,orderBy:{createdAt:'desc'}})).map(row=>{const simulated=row.snapshot&&OrderSnapshotSchema.parse(JSON.parse(row.snapshot.data)).account.provider==='mock';return {id:row.id,status:row.status,fulfillmentStatus:row.fulfillmentStatus,createdAt:row.createdAt,environment:simulated?'mock':'unconfigured',label:simulated?'SIMULADO':'NO_DISPONIBLE'};}));}
+  /** Must be called inside the payment admission transaction with a trusted buyer identity. */
+  async revalidateForPayment(tx:Tx,orderId:string,buyerId:string,now:string,hash:string){
+    const row=await tx.order.findFirst({where:{id:orderId,buyerId},include:{snapshot:true,consent:true}});
+    if(!row||!row.snapshot||!row.consent)missing();
+    if(row.status!=='APPROVED')throw new ApiError(409,'ORDER_NOT_PAYABLE');
+    if(row.snapshot.hash!==hash)throw new ApiError(409,'SNAPSHOT_CHANGED');
+    const original=OrderSnapshotSchema.parse(JSON.parse(row.snapshot.data));
+    const intent=await this.ownedIntent(tx,row.intentId,{role:'BUYER',id:buyerId});
+    const {offer,ctx}=await this.context(tx,intent,original.offer.id,orderId,now,original.method,row.reservationId);
+    if(evaluateOffer(intent,offer,ctx).status!=='ELIGIBLE')throw new ApiError(409,'REVALIDATION_FAILED');
+    const current=createSnapshot(intent,{...offer,stock:original.offer.stock},ctx);
+    const consent=ConsentRecordSchema.parse(JSON.parse(row.consent.data));
+    if(fingerprint(current)!==row.snapshot.hash||!canRequestPayment(current,consent,now))throw new ApiError(409,'SNAPSHOT_CHANGED');
+    if(current.account.provider!=='mock')throw new ApiError(409,'MOCK_ACCOUNT_REQUIRED');
+    return {row,snapshot:current,consent};
+  }
   /** Explicit local maintenance, also invoked before writes; no timer or financial action. */
   releaseExpired(){return this.db.write(async tx=>{await this.expire(tx,new Date(this.clock()));});}
 }

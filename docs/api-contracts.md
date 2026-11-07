@@ -1,6 +1,6 @@
-# API local — Gate G2
+# API local — G2 y extensión G3
 
-API propia de AgentPay, no API de pey. Validación ejecutable: `packages/contracts/src/index.ts`. No hay rutas financieras. Respuestas de error: `{ "error": { "code": "..." } }` sin campos sensibles.
+API propia de AgentPay, no API de pey. Validación ejecutable: `packages/contracts/src/index.ts`. No hay rutas financieras reales. Las rutas simuladas opcionales se describen en `g3-mock-payments.md`. Respuestas de error: `{ "error": { "code": "..." } }` sin campos sensibles.
 
 ## Autenticación y límites
 
@@ -78,3 +78,7 @@ Los snapshots completos y el teléfono preconfigurado viven en la DB local; arch
 El modelo de pagos solo prepara tablas y restricciones. Slot activo único por orden, recursos únicos por proveedor/tipo/id, transacciones externas únicas por proveedor/id y relación recurso 1:N transacciones. Las inserciones sintéticas de tests son pruebas de restricciones, no un proveedor simulado ni evidencia financiera.
 
 Fuentes de implementación: [Prisma SQLite v6](https://www.prisma.io/docs/orm/v6/overview/databases/sqlite), [Prisma generación](https://www.prisma.io/docs/orm/v6/prisma-client/setup-and-configuration/generating-prisma-client), [Fastify testing](https://fastify.dev/docs/latest/Guides/Testing/), [Fastify hooks](https://fastify.dev/docs/latest/Reference/Hooks/).
+
+## Extensión G3 vigente
+
+G2 continúa reproducible sin configurar simulador. Con MOCK_WEBHOOK_SECRET se habilitan solicitud/consulta/conciliación simuladas, evento crudo firmado y bandeja de comercio; controles de operador requieren secreto adicional distinto. Toda respuesta de pago y resumen de orden mock lleva SIMULADO. `pnpm demo:payments` verifica el flujo completo local. El comportamiento «sin rutas financieras» de las secciones G2 se refiere a su configuración comercial original; ver `g3-mock-payments.md` para contrato G3 completo.
