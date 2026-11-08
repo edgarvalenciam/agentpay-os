@@ -103,3 +103,7 @@
 - PeyWebhookInbox separada, payload cifrado AES-256-GCM con clave local independiente. Logs apagados; no persistir cuerpos bancarios crudos en auditoría. Dedup entrega/hash, acuse solo tras commit.
 - Cada registro queda VERIFIED_PENDING_RECONCILIATION; no se transforma en pago ni entrega de producto. La conciliación real y el transporte financiero están fuera de esta autorización de URL.
 - Configuración privada 0600 recargada por solicitud; incluye teléfono proporcionado sin replicarlo a fixtures ni repositorio. Secretos se introducen en terminal con entrada oculta, no en chat.
+
+## ADR — Prueba operativa aislada con cuenta vinculada (2026-11-07)
+
+Tras autorización explícita de un centavo hacia la cuenta pública de pruebas y verificación visible del vínculo en portal, se permite una solicitud diagnóstica aislada sin bankAccountId, opción documentada de pey. No se elimina la exigencia de cuenta/identificadores del servicio comercial. El diagnóstico no consume inventario, no crea órdenes ficticias, no confirma pagos y no habilita pagos generales. El marcador exclusivo previo al HTTP bloquea cualquier reenvío incluso ante errores ambiguos. La evidencia bancaria y metadatos permanecen privados. G4-R comercial continúa pendiente.
