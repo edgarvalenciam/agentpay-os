@@ -20,7 +20,9 @@
     "demo:pey": "tsx scripts/demo-pey-contract.ts",
     "pey:check-account": "tsx scripts/check-pey-account.ts",
     "pey:check-key": "tsx scripts/check-pey-key.ts",
-    "demo:pey:recovery": "tsx scripts/demo-pey-contract.ts --lost-receipt"
+    "demo:pey:recovery": "tsx scripts/demo-pey-contract.ts --lost-receipt",
+    "agent:configure": "tsx scripts/configure-openai.ts",
+    "demo:agent": "tsx scripts/demo-agent.ts"
   },
   "devDependencies": {
     "typescript": "5.9.3",

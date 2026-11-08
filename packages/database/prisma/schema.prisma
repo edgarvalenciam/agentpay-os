@@ -8,6 +8,7 @@ datasource db {
 }
 
 model Buyer {
+  agentRuns   AgentRun[]
   id          String           @id
   phoneNumber String
   intents     PurchaseIntent[]
@@ -315,4 +316,19 @@ model PeyWebhookInbox {
   keyFingerprint     String
   status             String    @default("VERIFIED_PENDING_RECONCILIATION")
   receivedAt         DateTime  @default(now())
+}
+
+model AgentRun {
+  id          String    @id
+  buyerId     String
+  buyer       Buyer     @relation(fields: [buyerId], references: [id])
+  key         String
+  requestHash String
+  status      String
+  statusCode  Int?
+  response    String?
+  createdAt   DateTime
+  completedAt DateTime?
+
+  @@unique([buyerId, key])
 }

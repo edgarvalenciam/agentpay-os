@@ -86,3 +86,9 @@ G2 continúa reproducible sin configurar simulador. Con MOCK_WEBHOOK_SECRET se h
 ## Recuperación pey ante recibo perdido (G4)
 
 POST /v1/orders/:id/reconcile mantiene cuerpo vacío y autenticación comprador/comercio dueño. Para un intento incierto sin ID, descubre un único recurso por consultas autenticadas paginadas. Devuelve estado actual si no hay coincidencia; 503 PEY_TRANSACTION_DISCOVERY_UNAVAILABLE cuando la búsqueda es incompleta, inválida o ambigua; 409 PAYMENT_RECOVERY_CONFLICT si un callback vinculó un ID distinto. No reenvía la solicitud financiera. Después de vincular el ID continúa conciliación individual y verificación de beneficiario. La bandeja GET /v1/merchants/:id/notifications solo contiene efectos conciliados y mantiene etiqueta REAL/SIMULADO, sin PII.
+
+## G5 — POST /v1/agent/proposals
+
+Ruta opcional habilitada solo al configurar el intérprete. Bearer comprador e Idempotency-Key obligatorios. Cuerpo estricto `{ "text": "Compra 2 kg de café por máximo $1,000 mañana", "timezone": "America/Mexico_City" }`. Identidad desde token; hora desde servidor. No acepta aprobaciones ni datos de pago.
+
+200 PROPOSED: proposalId, snapshotHash y resumen revisable, requiresBuyerApproval=true, paymentsInitiated=false, agentProvider. 200 NEEDS_CLARIFICATION: missingFields/questions sin intención/reserva. 200 NO_ELIGIBLE_OFFER: intención y motivos del core, sin orden. 409 en clave/cuerpo conflictivo o ejecución en curso/interrumpida; 422 negativa del modelo; 503 salida inválida, inventada o proveedor no disponible. Respuestas fallidas finales también se repiten idempotentemente, sin otro costo del modelo. Aprobar por POST /v1/orders es un paso humano separado.

@@ -1,6 +1,6 @@
 # AgentPay OS — Codex Starter v1.2
 
-**Estado:** G1, G2 y G3 implementados: core, API local, persistencia SQLite/Prisma, reservas, consentimiento y auditoría. 256 pruebas y TypeScript estricto aprobados. Adaptador pey y conciliación comercial probados con fixtures; pruebas bancarias aisladas QR/Push pagadas. Habilitación comercial real pendiente. Sin frontend. Fecha: 2026-11-07.
+**Estado:** G1–G3 implementados y G5 preparado con fixtures: core, API local, persistencia SQLite/Prisma, reservas, consentimiento y auditoría. 332 pruebas y TypeScript estricto aprobados. Adaptador pey y conciliación comercial probados con fixtures; pruebas bancarias aisladas QR/Push pagadas. Habilitación comercial real pendiente. Sin frontend. Fecha: 2026-11-07.
 
 ## Objetivo
 
@@ -9,10 +9,10 @@ Infraestructura B2B2C para comercio iniciado por IA, validado por políticas det
 ## Primeros pasos
 
 1. Abre esta carpeta en Codex y lee `AGENTS.md` y `docs/progress.md`.
-2. G1, G2 y G3 ya están implementados. Ejecuta los comandos de reproducción de abajo.
+2. Ejecuta `pnpm demo:agent` para la propuesta de compra con respuesta ficticia de modelo; no requiere claves.
 3. `pnpm demo` demuestra API y persistencia sin banco ni frontend.
 4. El prompt `prompts/START_CODEX.md` corresponde al arranque histórico de G1; no es la tarea siguiente.
-5. Siguiente paso: resolver compatibilidad de cuenta y evidencia de beneficiario para el flujo comercial real de G4. No activar pagos reales ni producción desde este paquete.
+5. Siguiente paso: configurar y autorizar una prueba de modelo OpenAI real para G5. Los pendientes bancarios de G4 quedan separados en docs/pey-pendientes.md. No activar pagos reales ni producción desde este paquete.
 
 ## Archivos
 
@@ -88,3 +88,9 @@ Receptor dedicado con SDK Standard Webhooks y almacenamiento cifrado; sin accion
 `pnpm demo:pey` demuestra el contrato con fixtures sin credenciales ni cobros. Ver `docs/g4-pey-integration.md` para conciliación, recuperación, configuración privada y límites. Las pruebas bancarias aisladas QR/Push están confirmadas; el E2E comercial real sigue pendiente y los pagos generales permanecen desactivados.
 
 `pnpm demo:pey:recovery` prueba una orden cuyo recibo se pierde: recupera la transacción sin reenviar, liquida una sola vez y muestra una notificación autenticada al comercio. Todo con fixtures; no requiere secretos reales.
+
+## G5 — Agente de compras sin herramientas de pago
+
+`pnpm demo:agent` demuestra la petición «2 kg de café por máximo $1,000 mañana» hasta una propuesta de $850 pendiente de aprobación. Validación independiente del modelo, políticas, fechas locales, idempotencia y reinicio cubiertos por pruebas. El texto no reconocido pide aclaración. No crea órdenes ni cobros.
+
+Conexión Responses preparada; calidad y acceso de un modelo real aún no evaluados. `pnpm agent:configure` guarda clave/modelo privados sin activarlos. AGENT_PROVIDER=disabled por defecto. Ver docs/g5-shopping-agent.md, tasks/05-openai.md y docs/pey-pendientes.md. Aplicar pnpm db:migrate a la DB comercial local antes de habilitar G5; la migración 007 se verificó en DBs temporales, no se aplicó a runtime operativo.

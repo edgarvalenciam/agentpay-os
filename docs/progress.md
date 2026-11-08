@@ -4,17 +4,17 @@
 
 | Fase | Estado | Evidencia | Bloqueo |
 |---|---|---|---|
-| 0 — Pey documental (G0-D) | Documentación revisada | `docs/pey-capabilities.md`; `docs/pey-validation.md` | Sin pruebas autenticadas |
-| 0 — Pey operativo (G0-R) | NO INICIADO | — | credenciales, cuenta ACTIVE, pagador y consentimiento |
+| 0 — Pey documental (G0-D) | Documentación revisada y contrastada | Capacidades y pruebas reales documentadas | PEY-001 y PEY-002 abiertos |
+| 0 — Pey operativo (G0-R) | Pruebas diagnósticas verificadas | API autenticada y QR/Push pagados | Cuenta comercial compatible y PEY-001/002 |
 | 1 — Core (G1) | APROBADO | 47 tests; typecheck sin errores | Ninguno para G1 |
 | 2 — API/DB (G2) | APROBADO | 72 tests, typecheck, 3 migraciones y demo HTTP | Local, un proceso; sin pagos |
 | 3 — Mock/conciliación (G3) | APROBADO | 122 tests, typecheck, demo HTTP SIMULADO | No valida integración bancaria |
 | 4 — Pey real (G4) | Diagnósticos bancarios QR y Push pagados; integración comercial pendiente | Ambos API PAID + webhooks firmados; evidencia bancaria | Cuenta portal no consultable (404); discrepancia metadata.clabe; no E2E comercial real |
-| 5 — OpenAI (G5) | NO INICIADA | — | — |
+| 5 — OpenAI (G5) | Código implementado; validación con modelo real pendiente | 76 tests nuevos, suite 332/332, demo ficticia | Configurar clave/modelo y autorizar prueba real |
 | 6 — Frontend (G6) | NO INICIADA | — | — |
 | 7 — E2E/demo (G7) | NO INICIADA | — | — |
 
-**El paquete original era documental. La implementación del 2026-11-07 añade core ejecutable y pruebas; la integración posterior está probada con fixtures, sin validación bancaria real.**
+**Estado actual: core/API/pagos y agente ejecutables. Pruebas bancarias aisladas QR/Push confirmadas; flujo comercial y agente verificados con fixtures. No equivalen a habilitación comercial real ni evaluación de un modelo real.**
 
 ## Evidencias por ejecución
 
@@ -172,3 +172,17 @@ Demostración ampliada: demo:pey y nueva demo:pey:recovery. Ambas recorren API c
 Verificación observada: pnpm typecheck salida 0; suite completa final **256/256 en 12 archivos** (24.98 s). 25 pruebas nuevas: 18 de descubrimiento/paginación y 7 de integración comercial/recuperación/concurrencia. pnpm demo:pey y pnpm demo:pey:recovery aprobadas con credenciales reales utilizadas 0 y cobros bancarios 0. Primera ejecución focalizada: 52 aprobadas y una fallida por URL incorrecta de notificaciones en la prueba; corregida a la ruta existente, sin omitir pruebas. Suite completa inicial 255/255; protección adicional de ID contradictorio y suite final 256/256. Demos ya aprobadas en el flujo anterior a esa protección, cuyo caso adverso y regresión normal están cubiertos por la suite final. No migraciones nuevas ni alteraciones de DBs operativas.
 
 Documentación: AGENTS, ADR-016, guía G4, contratos API, tareas y README actualizados. Bloqueos mantenidos: cuenta de portal devuelve 404 al GET de cuenta API y metadata.clabe no coincide con receptor esperado según evidencia previa. No se afirma E2E comercial real aprobado: las pruebas bancarias fueron diagnósticas aisladas. Default mock/off conservado. Notificación es bandeja persistente local, no email/WhatsApp. No se publicaron commits a remoto.
+
+## Ejecución G5 — interpretación y propuestas (2026-11-07)
+
+Autorización: «guardemos estos 2 pendientes y sigamos con la siguiente etapa». PEY-001/002 guardados en docs/pey-pendientes.md y copia sanitizada de outputs. Corrección explícita: el usuario pagó desde HSBC y Ramón recibió; discrepancia de metadata no significa cuenta equivocada ni pago sin reflejarse. No se enviaron nuevos mensajes a pey ni cobros.
+
+Implementado: IntentFragmentsSchema y grounding puro, calendario local con DST, contrato reducido de intérprete OpenAI Responses con esquema estricto y rechazo de acciones, servicio de catálogo/ofertas/propuesta sujeto a políticas, POST /v1/agent/proposals autenticado, AgentRun persistente con migración aditiva 007, replay/concurrencia/reinicio sin reejecución, configurador privado de clave/modelo y demo HTTP local. No hay frontend/G6. El modelo no puede aprobar órdenes, crear consentimientos ni solicitar pagos.
+
+El lenguaje inicial es conservador y verificable: cantidades enteras, presupuesto MXN con formato explícito y días soportados. Datos inventados, condiciones adicionales no reconocidas, otras monedas, restricciones/horarios ambiguos, oferta ausente o sobre presupuesto no se convierten silenciosamente en compra. Alias y catálogo son datos confiables del servidor. Textos de comercio no se insertan en el prompt; salidas de herramienta y campos de autoridad se rechazan.
+
+Comandos observados: prisma format, pnpm db:generate y pnpm typecheck aprobados. Migración 007 aplicada por pruebas/demos solo a bases temporales, incluyendo regresión de upgrade de G2; no se modificó la DB del receptor ni bases comerciales operativas. No se agregaron dependencias; lockfile sin cambios. Suite completa final **332/332 en 15 archivos**, 26.03 s (256 existentes + 76 nuevas: 40 core, 16 adaptador OpenAI, 20 integración). pnpm demo:agent aprobada: intención de 2 kg café, máximo $1,000, propuesta $850, aprobación humana pendiente, una reserva al repetir, cero llamadas reales OpenAI/banco, cero órdenes aprobadas y pagos. Regresión pnpm demo:pey:recovery aprobada con transporte ficticio.
+
+Incidencias corregidas antes del cierre: typecheck detectó import local de dinero y estrechamiento nullable, y tipos de payload del helper de prueba Fastify; corregidos sin omitir checks. Verificación inicial focalizada 51/51; integración 18/18; tras configuración privada 72/72; suites completas 328, 331 y finalmente 332 al añadir rechazo de condiciones extra y negaciones. No se usaron credenciales reales ni llamadas a OpenAI para resolver estas incidencias.
+
+G5 de código verificado; **validación con modelo real pendiente** (clave/modelo explícitos, acceso y prueba acotada autorizada). AGENT_PROVIDER=disabled y pagos mock/off de fábrica. Configurar una clave no activa el agente ni llama a OpenAI. Si un run queda interrumpido, exige revisión y no se reintenta automáticamente; una propuesta parcial no se aprueba sola. Límites: prototipo local de un proceso, gramática acotada, catálogo demo y sin evaluación lingüística real. No iniciar frontend ni afirmar G5 operativo real aprobado. Commit local y ZIP sin secretos; no publicación a remoto.

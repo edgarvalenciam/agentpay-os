@@ -1,3 +1,4 @@
+import { loadOpenAIInterpreter } from './shopping-agent-config.js';
 import { open, mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
@@ -22,9 +23,12 @@ try{
   const secret=process.env.MOCK_WEBHOOK_SECRET;
   const scenario=process.env.MOCK_SCENARIO??'ACCEPT';
   if(!['ACCEPT','TIMEOUT_BEFORE_ACCEPT','TIMEOUT_AFTER_ACCEPT'].includes(scenario))throw new Error('INVALID_MOCK_SCENARIO');
+  const agentProvider=process.env.AGENT_PROVIDER??'disabled';
+  if(!['disabled','openai'].includes(agentProvider))throw new Error('INVALID_AGENT_PROVIDER');
+  const shoppingAgent=agentProvider==='openai'?{interpreter:await loadOpenAIInterpreter(),productAliases:{coffee:['café','cafe']}}:undefined;
   const peyPayments=provider==='pey'?await loadPeyPaymentOptions():undefined;
   if(peyPayments){const inboxUrl=process.env.PEY_INBOX_DATABASE_URL??'file:'+resolve('work/webhook-runtime/inbox.db');inbox=new Database(inboxUrl);}
-  const app=buildApp({db,...(peyPayments?{peyPayments,peyInbox:{db:inbox!,getEncryptionKey:async()=>(await loadPeyReceiverConfig(resolve('.env.pey.local'))).encryptionKey}}:{}),...(provider==='mock'&&secret?{mockPayments:{gateway:new MockCodiPushGateway(db,clock,scenario as MockScenario),webhookSecret:secret,apiKeyId:'mock-api-key',dispatchIntervalMs:1000,...(process.env.MOCK_CONTROL_TOKEN?{controlToken:process.env.MOCK_CONTROL_TOKEN}:{})}}:{}),credentials:[{token:buyerToken,actor:{role:'BUYER',id:'buyer-demo'}},{token:merchantToken,actor:{role:'MERCHANT',id:'merchant-demo'}}]});
+  const app=buildApp({db,...(shoppingAgent?{shoppingAgent}:{}),...(peyPayments?{peyPayments,peyInbox:{db:inbox!,getEncryptionKey:async()=>(await loadPeyReceiverConfig(resolve('.env.pey.local'))).encryptionKey}}:{}),...(provider==='mock'&&secret?{mockPayments:{gateway:new MockCodiPushGateway(db,clock,scenario as MockScenario),webhookSecret:secret,apiKeyId:'mock-api-key',dispatchIntervalMs:1000,...(process.env.MOCK_CONTROL_TOKEN?{controlToken:process.env.MOCK_CONTROL_TOKEN}:{})}}:{}),credentials:[{token:buyerToken,actor:{role:'BUYER',id:'buyer-demo'}},{token:merchantToken,actor:{role:'MERCHANT',id:'merchant-demo'}}]});
   let closing=false;
   const shutdown=async()=>{if(closing)return;closing=true;await app.close();await db.close();await inbox?.close();await lock.close();await import('node:fs/promises').then(fs=>fs.unlink(dbPath+'.server.lock'));};
   process.once('SIGINT',()=>{void shutdown();});process.once('SIGTERM',()=>{void shutdown();});

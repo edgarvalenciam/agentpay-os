@@ -101,3 +101,13 @@ Usuario eligió explícitamente QR tras definir prueba única de $0.01 MXN hacia
 - Recuperación de recibo perdido puede consultar GET /transaction/api-key: metadata exacta, páginas acotadas y completas, identidad única; nunca reenviar POST ni confirmar por PENDING.
 - No omitir controles del receptor para sortear 404 de cuentas del portal o la discrepancia de metadata.clabe. Mantener bloqueos visibles/documentados.
 - Una transacción recuperada se vincula atómicamente antes de conciliación; callback concurrente o duplicado no debe reemplazar IDs confirmados ni consumir inventario/notificar dos veces.
+
+## Autorización y límites de G5 — 2026-11-07
+
+El usuario indicó «guardemos estos 2 pendientes y sigamos con la siguiente etapa». Autoriza Fase 5 (interpretación, catálogo/ofertas y propuestas); las restricciones históricas de no iniciar G5 quedan superadas para esta fase. PEY-001 y PEY-002 permanecen abiertos en docs/pey-pendientes.md: el usuario fue origen y Ramón beneficiario de los pagos confirmados; no describir la discrepancia de metadata como pago equivocado o aún no reflejado.
+
+- La IA extrae fragmentos, no aporta autoridad para identidad, cantidad/presupuesto/fechas inventadas, aprobación ni cobros. El core y los datos del comprador/catálogo mandan.
+- No ofrecer herramientas financieras ni createOrder al modelo; propuestas requieren aprobación separada del comprador.
+- OpenAI desactivado de fábrica. Las pruebas y demos usan fixtures; guardar una clave no autoriza gastar tokens ni activar el proveedor.
+- No usar credenciales reales ni realizar llamadas a OpenAI o nuevos cobros sin autorización específica. No iniciar frontend/G6 sin nueva instrucción.
+- Validación con modelo real pendiente, distinta de aprobación de código G5. Ver docs/g5-shopping-agent.md.

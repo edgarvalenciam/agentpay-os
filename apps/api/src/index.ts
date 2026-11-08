@@ -1,16 +1,18 @@
+import { ShoppingAgentService,type ShoppingAgentOptions } from './shopping-agent.js';
 import Fastify, { type FastifyRequest } from 'fastify';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import { ZodError, z } from 'zod';
 import { ApiError, CommerceService, type Actor } from './service.js';
-import { CreateIntentSchema, ProposeSchema, CreateOrderSchema, EvaluateSchema, IdempotencyKeySchema, RequestPaymentSchema } from '@agentpay/contracts';
+import { CreateIntentSchema, ProposeSchema, CreateOrderSchema, EvaluateSchema, IdempotencyKeySchema, RequestPaymentSchema,AgentProposalRequestSchema } from '@agentpay/contracts';
 import type { UnitOfWork } from '@agentpay/database';
 import { PaymentService, type MockPaymentOptions } from './payment-service.js';
 import { PeyPaymentService,type PeyPaymentOptions } from './pey-payment-service.js';
 import { PeyInboxProcessor } from './pey-inbox-processor.js';
 import { OutboxDispatcher } from './outbox.js';
 export interface Credential { token:string; actor:Actor }
-export function buildApp(options:{db:UnitOfWork;credentials:Credential[];clock?:()=>string;mockPayments?:MockPaymentOptions;peyPayments?:PeyPaymentOptions;peyInbox?:{db:UnitOfWork;getEncryptionKey:()=>Promise<Buffer>}}){
+export function buildApp(options:{db:UnitOfWork;credentials:Credential[];clock?:()=>string;shoppingAgent?:ShoppingAgentOptions;mockPayments?:MockPaymentOptions;peyPayments?:PeyPaymentOptions;peyInbox?:{db:UnitOfWork;getEncryptionKey:()=>Promise<Buffer>}}){
   if(!options.credentials.length || options.credentials.some(c=>c.token.length<24) || new Set(options.credentials.map(c=>c.token)).size!==options.credentials.length)throw new Error('UNIQUE_LOCAL_TOKENS_MIN_24_REQUIRED');
+  if(options.shoppingAgent&&process.env.NODE_ENV==='production')throw new Error('LOCAL_AGENT_PROFILE_REQUIRED');
   const mock=options.mockPayments,pey=options.peyPayments;
   if(mock&&pey)throw new Error('ONE_PAYMENT_PROVIDER_REQUIRED');
   if(pey&&(process.env.NODE_ENV==='production'||pey.gateway.provider!=='pey'||pey.gateway.environment!=='real'))throw new Error('LOCAL_PEY_PROFILE_REQUIRED');
@@ -45,7 +47,12 @@ export function buildApp(options:{db:UnitOfWork;credentials:Credential[];clock?:
   const params=(req:FastifyRequest)=>z.object({id:z.string().min(1)}).parse(req.params).id;
   const key=(req:FastifyRequest)=>IdempotencyKeySchema.parse(req.headers['idempotency-key']);
   const isRealArmed=()=>Boolean(pey?.gateway.allowRealPayments&&pey.gateway.grant&&Date.parse(pey.gateway.grant.expiresAt)>Date.parse((options.clock??(()=>new Date().toISOString()))()));
-  app.get('/health',async()=>({status:'ok',phase:pey?'G4':'G3',paymentsEnabled:isRealArmed(),realPaymentsEnabled:isRealArmed(),mockPaymentsEnabled:Boolean(mock)}));
+  app.get('/health',async()=>({status:'ok',phase:options.shoppingAgent?'G5':pey?'G4':'G3',agentProvider:options.shoppingAgent?.interpreter.provider??'disabled',paymentsEnabled:isRealArmed(),realPaymentsEnabled:isRealArmed(),mockPaymentsEnabled:Boolean(mock)}));
+  if(options.shoppingAgent){
+    const shopping=new ShoppingAgentService(options.db,options.clock??(()=>new Date().toISOString()),options.shoppingAgent);
+    app.addHook('onReady',async()=>{await shopping.recoverInterrupted();});
+    app.post('/v1/agent/proposals',async(req,reply)=>{const r=await shopping.propose(actor(req),key(req),AgentProposalRequestSchema.parse(req.body));return reply.code(r.status).send(r.body);});
+  }
   app.post('/v1/intents',async(req,reply)=>{const r=await service.createIntent(actor(req),key(req),CreateIntentSchema.parse(req.body));return reply.code(r.status).send(r.body);});
   app.get('/v1/intents/:id',async req=>service.getIntent(actor(req),params(req)));
   app.get('/v1/intents/:id/offers',async req=>service.listOffers(actor(req),params(req)));
