@@ -89,3 +89,7 @@ El usuario indicó «ok hagamoslo» tras proponer adaptador pey y conciliación.
 - Mantener mock/off. No usar credenciales reales en llamadas ni generar cobros sin autorización concreta de operación, importe y beneficiario.
 - La autorización por orden es privada, expira y vincula snapshot/importe/cuenta/teléfono; nunca incluirla en commits o ZIP.
 - No confundir pruebas contractuales con una entrega auténtica o confirmación bancaria. No reenviar POST ambiguos.
+
+## Autorización diagnóstica QR — 2026-11-07
+
+Usuario eligió explícitamente QR tras definir prueba única de $0.01 MXN hacia la cuenta pública de pruebas de Ramón. Se permite diagnóstico QR aislado, no habilitación general del proveedor QR ni frontend. Registro exclusivo previo al POST, sin replay ante incertidumbre; la imagen proviene de pey, nunca de generación artística. No afirmar pago por crear QR. Puede recibir múltiples pagos: indicar un solo pago y reconciliar cada transacción si llega evidencia.
