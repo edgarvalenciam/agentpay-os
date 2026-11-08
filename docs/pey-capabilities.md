@@ -41,7 +41,7 @@ Un webhook puede repetirse. Validar firma Standard Webhooks con **cuerpo origina
 - `numRef`: uno a siete dígitos; no puede transportar UUID ni una referencia alfanumérica de orden.
 - `bankAccountId`: ID registrado de la cuenta CoDi receptora activa; si se omite, la cuenta CoDi asociada a la API key recibe el cobro.
 - `metadata`: hasta 50 pares, claves ≤40 caracteres, valores ≤500 caracteres, tipos escalares; pey los convierte a strings. Usar `orderId` y `paymentAttemptId`, no datos sensibles.
-- Respuesta `200`: `transactionId` (ULID) y `codiId` (identificador CoDi de 20 dígitos). **No significa que el pagador haya aceptado**.
+- Respuesta `200`: `transactionId` (ULID) y `codiId` (documentado como 20 dígitos; prueba bancaria del 2026-11-07 observó 20 caracteres hexadecimales). **No significa que el pagador haya aceptado**.
 - Consulta `GET /transaction/:id` para `PENDING` / `PAID`. No se documentan eventos de rechazo/notificación vista/no entregada.
 
 ### CoDi QR (`POST /codi/qr`)

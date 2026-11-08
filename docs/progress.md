@@ -9,7 +9,7 @@
 | 1 — Core (G1) | APROBADO | 47 tests; typecheck sin errores | Ninguno para G1 |
 | 2 — API/DB (G2) | APROBADO | 72 tests, typecheck, 3 migraciones y demo HTTP | Local, un proceso; sin pagos |
 | 3 — Mock/conciliación (G3) | APROBADO | 122 tests, typecheck, demo HTTP SIMULADO | No valida integración bancaria |
-| 4 — Pey real (G4) | QR diagnóstico pagado; CoDi Push comercial pendiente | API PAID + webhook firmado + portal receptor | Consulta de cuenta portal devuelve 404; discrepancia metadata.clabe; push sin recepción |
+| 4 — Pey real (G4) | Diagnósticos bancarios QR y Push pagados; integración comercial pendiente | Ambos API PAID + webhooks firmados; evidencia bancaria | Cuenta portal no consultable (404); discrepancia metadata.clabe; no E2E comercial real |
 | 5 — OpenAI (G5) | NO INICIADA | — | — |
 | 6 — Frontend (G6) | NO INICIADA | — | — |
 | 7 — E2E/demo (G7) | NO INICIADA | — | — |
@@ -150,3 +150,13 @@ El evento QR permanece en la bandeja de evidencia, no aplicado como pago de una 
 Usuario autorizó «intentemos el push» manteniendo importe de un centavo MXN, celular y cuenta de pruebas de Ramón. Revisión de solo lectura en portal confirmó Cuenta Prueba Ramón vinculada a la clave; sin cambios. Se utilizó el helper diagnóstico ya probado, con nuevo marcador exclusivo privado para esta autorización (tercer intento histórico), conservando anteriores y mock/off general.
 
 Un único POST /codi/pn respondió HTTP 200, pero el recibo no pasó validación estricta y el marcador permanece SUBMISSION_UNKNOWN. No se repitió el envío. Consulta autenticada GET /transaction/api-key posterior encontró exactamente una transacción para los IDs nuevos en PENDING, sin páginas adicionales. Respuesta inicial cifrada y recovery privados en work/pey-one-cent-probe-3. No hay pago confirmado ni evidencia de entrega al teléfono. La respuesta tiene transactionId y codiId string de longitud 20, sin campo error; investigar discrepancia de formato frente al patrón numérico documentado antes de modificar el contrato. No confundir el pago QR confirmado previamente con este Push. Sin cambios de código productivo ni nuevas pruebas, solo diagnóstico operativo y documentación.
+
+## Push real recibido y pagado — 2026-11-07
+
+Usuario aportó capturas: notificación CoDi de HSBC, solicitud por un centavo MXN con beneficiario Ramón y confirmación bancaria de pago enviado (todavía en verificación en esa pantalla). No se guardaron las capturas con saldo/datos privados en git/ZIP ni se trataron como instrucciones.
+
+Verificación independiente: GET /transaction/:id de la tercera prueba devolvió PAID, MXN, un centavo, CODI/API_CODI_PN y metadata única coincidente. Bandeja dedicada contiene codi.pn.payment_received firmado y cifrado: se verificó integridad al abrir, apiKeyId configurado, referencia, importe, orden/intento diagnóstico, transacción y fecha coincidentes con consulta. Folio del recibo upstream coincide exactamente con la captura bancaria; destinatario en la captura es Ramón y la cuenta beneficiaria tiene la terminación esperada. Sin cargos adicionales. Confirmación privada en work/pey-one-cent-probe-3/confirmation.json. No hubo otro POST durante esta verificación.
+
+Se encontró causa del recibo inicialmente desconocido: codiId tiene 20 caracteres hexadecimales, no exclusivamente dígitos como describe la documentación. La evidencia real del proveedor coincide con el comprobante HSBC. Se ajustó solo el formato a [0-9a-fA-F]{20} en gateway y helper diagnóstico; se mantienen rechazo de otras letras, longitudes incorrectas, espacios y ausencia de folio. No cambia la autorización ni convierte aceptación en pago. No se reemplazó el registro histórico de incertidumbre ni se repitió el envío.
+
+Verificación ejecutada tras corrección: pnpm typecheck salida 0; Vitest focalizado en gateway, helper y servicio pey: **73/73 en tres archivos**, incluidos 12 casos nuevos. Fixtures con folios ficticios, sin red bancaria. Hallazgos actualizados en capacidades/plan/validación. Las pruebas operativas QR y Push están confirmadas; no se afirma E2E comercial real ni frontend. Persiste discrepancia metadata.clabe respecto de documentación y 404 al consultar la cuenta del portal; no se retiraron controles del servicio comercial para ocultarlas. Mock/off generales conservados.

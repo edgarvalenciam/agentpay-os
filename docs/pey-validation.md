@@ -62,3 +62,9 @@ Usuario reporta cuenta receptora ACTIVE y teléfono con CoDi. No se han consulta
 Una prueba QR de importe fijo $0.01 MXN hacia la cuenta pública de pruebas fue pagada por el usuario desde HSBC: API PAID, webhook firmado correlacionado por QR/transacción/metadata/referencia/importe y transacción visible en el historial receptor del portal. Demuestra el camino diagnóstico QR y la entrega real del webhook. No acredita CoDi Push ni integración de orden/stock/outbox del producto.
 
 Hallazgos operativos: apiKeyId recuperado del evento y corroborado en el portal, guardado privado. Cuenta creada en portal no consultable por GET /bank-account/:id (404 observado). metadata.clabe coincide con cuenta pagadora en esta prueba aunque la documentación describe receptora; retener discrepancia y no generalizar su semántica ni retirar validaciones hasta aclaración. No confundir esa discrepancia con ausencia de pago: PAID y destino en portal se verificaron por evidencias separadas.
+
+## Evidencia bancaria Push — 2026-11-07
+
+Solicitud nueva tras vincular Cuenta Prueba Ramón: usuario recibió notificación HSBC y autorizó un centavo. Consulta autenticada PAID y webhook firmado correlacionados por transacción, metadata, referencia, importe/moneda y fecha. Captura bancaria confirma beneficiario Ramón y folio exacto. La prueba bancaria Push, además de QR, funcionó. No afirmar que el cambio de nombre/vínculo fue la causa demostrada de los fallos previos.
+
+Desviación de contrato observada: codiId del recibo y comprobante HSBC es hexadecimal de longitud 20; el texto OpenAPI dice 20 dígitos. Gateway y helper ahora permiten exactamente 20 caracteres hexadecimales, conservando los casos numéricos. Doce regresiones nuevas incluyen mayúsculas, otras letras, espacios y límites de longitud. Separar este hecho observado de la descripción documental. No generalizar otros formatos sin evidencia.

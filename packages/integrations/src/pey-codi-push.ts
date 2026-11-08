@@ -3,7 +3,7 @@ import { minorToMxn,mxnToMinor,type PaymentGateway,type PushSubmission,type Push
 const id=z.string().min(1).max(255);
 const money=z.union([z.string(),z.number()]).transform(v=>mxnToMinor(v));
 const external=z.object({orderId:id,paymentAttemptId:id,environment:z.literal('real')}).passthrough();
-const receiptSchema=z.object({transactionId:id,codiId:z.string().regex(/^\d{20}$/)});
+const receiptSchema=z.object({transactionId:id,codiId:z.string().regex(/^[0-9a-fA-F]{20}$/)});
 const bankSchema=z.object({id,name:z.string().min(1),clabe:z.string().regex(/^\d{18}$/),codiStatus:z.enum(['PENDING','PROCESSING','ACTIVE','ERROR'])}).passthrough();
 const transactionSchema=z.discriminatedUnion('status',[
  z.object({id,status:z.literal('PENDING')}).passthrough(),

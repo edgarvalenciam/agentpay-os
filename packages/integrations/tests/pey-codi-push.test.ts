@@ -15,6 +15,15 @@ function setup(response?: (url:string,init:RequestInit)=>Promise<Response>,optio
  return {calls,gateway:new PeyCodiPushGateway({apiKey:'fixture-key-not-real',transport,clock:()=>now,allowRealPayments:true,grant,...options})};
 }
 describe('pey HTTP contract with injected transport only',()=>{
+ it.each(['abcdef0123abcdef0123','ABCDEF0123ABCDEF0123'])('accepts a bank-observed hexadecimal folio without claiming payment: %s',async codiId=>{
+  const {gateway,calls}=setup(async url=>new Response(JSON.stringify(url.includes('/bank-account/')?bank:{transactionId:'fixture-tx',codiId})));
+  expect(await gateway.submit(input)).toEqual({transactionId:'fixture-tx',codiId});expect(calls.filter(c=>c.method==='POST')).toHaveLength(1);
+ });
+ it.each(['zbcdef0123abcdef0123','abcdef0123abcdef012','abcdef0123abcdef01234','abcdef0123abcdef012 '])('keeps malformed folio uncertain: %s',async codiId=>{
+  const {gateway,calls}=setup(async url=>new Response(JSON.stringify(url.includes('/bank-account/')?bank:{transactionId:'fixture-tx',codiId})));
+  await expect(gateway.submit(input)).rejects.toThrow('PEY_SUBMISSION_UNKNOWN');expect(calls.filter(c=>c.method==='POST')).toHaveLength(1);
+ });
+
  it('sends explicit beneficiary, decimal money, phone and flat metadata once, with no invented idempotency header',async()=>{
   const {gateway,calls}=setup();expect(await gateway.submit(input)).toEqual({transactionId:'fixture-transaction',codiId:'12345678901234567890'});expect(calls).toHaveLength(2);
   expect(calls[0]!.url).toBe('https://api.pey.mx/bank-account/fixture-bank');const post=calls[1]!;expect(post.url).toBe('https://api.pey.mx/codi/pn');expect(post.body).toContain('"amount":0.01');

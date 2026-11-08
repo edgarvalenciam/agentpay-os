@@ -737,3 +737,7 @@ Adaptador CoDi Push protegido, consulta de cuenta/transacción, procesador de we
 ## Evidencia real posterior: QR pagado — 2026-11-07
 
 Un centavo MXN pagado desde HSBC, con API PAID, evento Standard Webhooks válido y transacción coincidente en historial receptor de Ramón. apiKeyId recuperado de forma privada. Se mantiene pendiente G4-R comercial/Push, consulta de cuenta compatible con API (404 en cuenta del portal) y aclaración de metadata.clabe, que en esta prueba coincide con pagador y no con receptor documentado. No se incorporó todavía el adaptador QR comercial ni frontend.
+
+## Evidencia real posterior: Push pagado — 2026-11-07
+
+También se confirmó la prueba diagnóstica CoDi Push de un centavo mediante API PAID, webhook firmado y capturas HSBC con beneficiario/folio coincidentes. El transporte bancario QR/Push y la recepción real de webhooks tienen evidencia. Resta integrar el E2E comercial real, resolver compatibilidad de cuenta portal/API y discrepancia metadata.clabe. Corregido formato de codiId con evidencia bancaria: 20 caracteres hexadecimales; 73 regresiones focalizadas y typecheck aprobados. No hay frontend ni habilitación general de pagos.

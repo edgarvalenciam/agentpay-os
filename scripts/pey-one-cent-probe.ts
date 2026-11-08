@@ -18,7 +18,7 @@ export async function runOneCentProbe(options:{apiKey:string;phone:string;consen
   const reader=response.body?.getReader();if(!reader)throw new Error();let size=0;const chunks:Uint8Array[]=[];
   for(;;){const next=await reader.read();if(next.done)break;size+=next.value.byteLength;if(size>65536){await reader.cancel();throw new Error();}chunks.push(next.value);}
   const parsed:unknown=JSON.parse(Buffer.concat(chunks).toString('utf8'));
-  if(!parsed||typeof parsed!=='object'||!('transactionId' in parsed)||typeof parsed.transactionId!=='string'||parsed.transactionId.length<1||parsed.transactionId.length>255||!('codiId' in parsed)||typeof parsed.codiId!=='string'||!/^\d{20}$/.test(parsed.codiId))throw new Error();
+  if(!parsed||typeof parsed!=='object'||!('transactionId' in parsed)||typeof parsed.transactionId!=='string'||parsed.transactionId.length<1||parsed.transactionId.length>255||!('codiId' in parsed)||typeof parsed.codiId!=='string'||!/^[0-9a-fA-F]{20}$/.test(parsed.codiId))throw new Error();
   const receipt={transactionId:parsed.transactionId,codiId:parsed.codiId};
   await save({status:'PAYMENT_PENDING',...receipt});return {status:'PAYMENT_PENDING'};
  }catch{await save({status:'SUBMISSION_UNKNOWN'});return {status:'SUBMISSION_UNKNOWN'};}
