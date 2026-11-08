@@ -2,9 +2,9 @@
 
 ## Estado actual y alcance vigente — 2026-11-07
 
-G1–G3 completos; G4 técnico con fixtures y diagnósticos bancarios QR/Push pagados, pero operación comercial real bloqueada por PEY-001/002; G5 con fixtures y un caso real positivo; G6 local fixture/mock verificado. G7 no iniciado. Las restricciones de «primera sesión» de abajo son históricas y las autorizaciones posteriores indican qué fases se habilitaron.
+G1–G3 completos; G4 técnico con fixtures y diagnósticos bancarios QR/Push pagados, pero operación comercial real bloqueada por PEY-001/002; G5 con fixtures y un caso real positivo; G6 local fixture/mock y G7-D (demo simulada) verificados. G7-R comercial real sigue pendiente. Las restricciones de «primera sesión» de abajo son históricas y las autorizaciones posteriores indican qué fases se habilitaron.
 
-El usuario autoriza revisión y mejoras locales verificables. No inferir nuevas llamadas pagadas a OpenAI, cobros reales, cambios de cuentas bancarias, publicación ni cierre de G7. Mantener aislados receptor/túnel pey y demo comercial. Fuente actual de evidencias: docs/progress.md y docs/revision-2026-11-07.md.
+El usuario autoriza revisión y mejoras locales verificables. No inferir nuevas llamadas pagadas a OpenAI, cobros reales, cambios de cuentas bancarias, publicación ni cierre de G7-R. Mantener aislados receptor/túnel pey y demo comercial. Fuente actual de evidencias: docs/progress.md y docs/revision-2026-11-07.md.
 
 - Cambiar pedido debe liberar de forma autenticada/idempotente solo la reserva de una propuesta sin orden; no cancelar cobros, órdenes aprobadas ni evidencia.
 - Recuperación de solicitud desde UI: consultar estado y conservar la misma clave/cuerpo originales. Nunca reenviar al proveedor un intento ya registrado o incierto; el backend controla el replay.
@@ -135,3 +135,13 @@ El usuario indicó «si hagamoslo» tras proponer frontend mínimo. Autoriza G6,
 - El simulador solo genera eventos ficticios desde su vista de operador; no ofrecer funciones comerciales QR/links sin adaptador.
 - Preparación exige propiedad del comercio y evidencia de pago confirmado, stock/reserva conciliados; excepción tardía no autoriza preparación.
 - UI no resuelve PEY-001/002. Mantener pendiente la habilitación comercial real. Ver docs/g6-frontend.md.
+
+
+## Autorización G7-D y concurso — 2026-11-07
+
+El usuario indicó «dale otra vuelta y mejorarlo ya solo falta probarlo hazlo para ganar el concuros» y eligió demo de tres minutos con producto/innovación/integración. Autoriza mejoras y validación integral local, ensayo reproducible y preparación de presentación. Supera el límite histórico de no iniciar G7 para este alcance de demo. No autoriza dinero real, llamadas pagadas, publicación o cambios de cuentas.
+
+- G7-D verificado con pruebas/demos/navegador; no declarar G7-R comercial ni producción. Ver docs/g7-demo-validation.md.
+- Explicación de selección debe provenir de checks/precios del core, sin inventar ahorros o disponibilidad. Oferta cambiada durante reserva exige nueva evaluación.
+- Demo concurso solo fixture/mock, sesión/DB aisladas y cookies por puerto. No resetear datos bancarios ni borrar historial para preparar la presentación.
+- Guion de tres minutos en docs/concurso-demo-3-minutos.md: declarar qué es simulado, qué pruebas reales ocurrieron separadamente y qué sigue bloqueado.

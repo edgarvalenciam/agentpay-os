@@ -138,3 +138,10 @@ POST /v1/orders/:id/preparation solo permite comercio dueño, estado PAID/READY_
 Revisión autorizada por usuario (2026-11-07). Cambiar pedido libera la reserva mediante POST /v1/proposals/:id/release: actor comprador dueño, cuerpo vacío, idempotencia y transacción serializada con aprobación. No borra propuesta/snapshot ni puede cancelar una orden aprobada, intento o pago. Una propuesta liberada falla la revalidación; el replay del resultado histórico no reactiva su reserva.
 
 Una interrupción de red en el navegador conserva la incertidumbre y la clave de pago. La recuperación es manual: primero consulta y, solo si no existe intento, repite la operación interna con la misma clave/cuerpo. La API devuelve la aceptación persistida o bloquea un intento existente, incluyendo UNKNOWN. No se añade reintento de POST al proveedor ni nueva autorización financiera. Polling sigue siendo solo GET. Si falla sessionStorage, continuar en memoria con advertencia de mantener la pestaña abierta.
+
+
+## ADR-022 — Explicación verificable y sesiones de concurso
+
+La explicación compara todos los candidatos del catálogo consultado (hasta 100) con checks del motor, conserva resultado en AgentRun y selecciona el menor importe elegible. No la redacta el modelo, ni sustituye revalidación/reserva/consentimiento. Si falla la reserva por concurrencia, se presenta su evaluación actual y ningún candidato queda seleccionado. Margen presupuestal no se etiqueta como ahorro.
+
+G7-D usa sesión de concurso aislada por arranque y DB privada nueva, conservando datos anteriores; no se resetea el seed operativo. Cookies incluyen el puerto porque navegadores comparten cookies entre puertos del mismo host. Un cambio de sesión invalida el estado local de compra antes de consultar la DB nueva. El ensayo automatizado usa DBs temporales propias y HTTP loopback, manteniendo fixture/mock y sin leer configuraciones financieras.

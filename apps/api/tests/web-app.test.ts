@@ -28,6 +28,14 @@ afterEach(async()=>{await web?.close();await api?.close();await db?.close();awai
 describe('G6 local web BFF',()=>{
  it('serves frontend assets with CSP and never exposes private upstream tokens',async()=>{for(const path of ['/','/client.js','/styles.css']){const r=await call(path);expect(r.statusCode).toBe(200);expect(r.body).not.toContain(buyerToken);expect(r.body).not.toContain(merchantToken);expect(r.body).not.toContain(controlToken);expect(r.headers['content-security-policy']).toContain("connect-src 'self'");expect(r.headers['content-security-policy']).not.toContain('unsafe-inline');expect(r.headers['cache-control']).toBe('no-store');}expect((await call('/')).body).toContain('SIMULADO');});
  it('uses HttpOnly SameSite cookies and does not return a Bearer credential in session data',async()=>{const r=await web.inject({url:'/ui-api/session',headers:{host}});expect(String(r.headers['set-cookie'])).toContain('HttpOnly');expect(String(r.headers['set-cookie'])).toContain('SameSite=Strict');expect(r.json()).toMatchObject({role:'BUYER',environment:'mock',agentProvider:'fixture'});expect(r.body).not.toMatch(/fixture-web-.*token|Bearer/);});
+ it('isolates cookies between the ordinary demo and contest ports on the same host',async()=>{
+  await role('MERCHANT');expect(cookie).toMatch(/^agentpay_demo_3002=/);
+  const other=buildWebApp({...config(),origin:'http://127.0.0.1:3003'});
+  try{const session=await other.inject({url:'/ui-api/session',headers:{host:'127.0.0.1:3003',cookie}});
+   expect(session.json().role).toBe('BUYER');expect(String(session.headers['set-cookie'])).toMatch(/^agentpay_demo_3003=/);
+   expect((await call('/ui-api/session')).json().role).toBe('MERCHANT');
+  }finally{await other.close();}
+ });
  it('rejects cross-origin and hostile Host headers before any mutations',async()=>{for(const headers of [{host,origin:'https://attacker.example',cookie,'x-ui-csrf':csrf},{host:'attacker.example',cookie,'x-ui-csrf':csrf}])expect((await web.inject({url:'/ui-api/role',method:'POST',headers,payload:{role:'OPERATOR'}})).statusCode).toBe(403);expect(await db.client.order.count()).toBe(0);});
  it('rejects missing session or CSRF even with supplied upstream Authorization',async()=>{expect((await web.inject({url:'/ui-api/orders',method:'POST',headers:{host,authorization:'Bearer '+buyerToken},payload:{}})).statusCode).toBe(401);expect((await web.inject({url:'/ui-api/orders',method:'POST',headers:{host,cookie},payload:{}})).statusCode).toBe(403);});
  it('does not proxy arbitrary API, provider, secrets or operator paths',async()=>{for(const path of ['/.env.pey.local','/.env.openai.local','/v1/orders','/ui-api/codi/pn','/ui-api/test-only/mock-payments/x/confirm','/packages/database/schema.prisma'])expect((await call(path)).statusCode).toBe(404);});
@@ -92,6 +100,13 @@ describe('G6 local web BFF',()=>{
   expect((await web.inject({url:'/ui-api/merchant/orders?refresh=1',headers:{host}})).statusCode).toBe(401);
  });
  it('requires explicit approval and the reviewed hash to create an order',async()=>{expect((await call('/ui-api/orders','POST',{proposalId:'made-up',snapshotHash:'a'.repeat(64)})).statusCode).toBe(400);expect(await db.client.order.count()).toBe(0);});
+ it('rejects a changed price after presenting the explanation without consenting or requesting payment',async()=>{
+  const p=(await call('/ui-api/proposals','POST',{text:'Compra 2 kg de café por máximo $1,000 mañana',timezone:'America/Mexico_City'})).json();
+  expect(p.decision.evaluations.find((e:{offerId:string})=>e.offerId==='coffee-1200').reasons).toContain('BUDGET');
+  await db.client.offer.update({where:{id:'coffee-850'},data:{amountMinor:95000,version:{increment:1}}});
+  const approval=await call('/ui-api/orders','POST',{proposalId:p.proposalId,snapshotHash:p.snapshotHash,approved:true});expect(approval.statusCode).toBe(409);
+  expect(await db.client.order.count()).toBe(0);expect(await db.client.consentRecord.count()).toBe(0);expect(await db.client.paymentAttempt.count()).toBe(0);
+ });
  it('keeps operators and merchants away from buyer-only mutation paths',async()=>{await role('MERCHANT');expect((await call('/ui-api/orders','POST')).statusCode).toBe(403);await role('OPERATOR');expect((await call('/ui-api/proposals','POST')).statusCode).toBe(403);});
  it('requires the owning merchant and paid evidence for preparation',async()=>{const o=await order();expect((await api.inject({method:'POST',url:`/v1/orders/${o.id}/preparation`,headers:{authorization:'Bearer '+buyerToken,'idempotency-key':'fixture-buyer-prep'},payload:{}})).statusCode).toBe(403);await role('MERCHANT');expect((await call('/ui-api/merchant/orders/foreign/preparation','POST')).statusCode).toBe(404);expect((await call(`/ui-api/merchant/orders/${o.id}/preparation`,'POST')).statusCode).toBe(409);});
  it('does not treat a late paid order with fulfillment exception as ready for preparation',async()=>{const {o,attemptId}=await requested();await db.client.reservation.updateMany({where:{orderId:o.id},data:{status:'RELEASED'}});await role('OPERATOR');expect((await call(`/ui-api/simulation/${attemptId}/confirm`,'POST')).statusCode).toBe(200);await role('MERCHANT');expect((await call(`/ui-api/merchant/orders/${o.id}/preparation`,'POST')).statusCode).toBe(409);expect(await db.client.auditEvent.count({where:{type:'MERCHANT_PREPARATION_STARTED'}})).toBe(0);});

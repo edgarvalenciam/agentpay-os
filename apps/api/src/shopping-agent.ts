@@ -46,12 +46,19 @@ export class ShoppingAgentService {
     const created=await commerce.createIntent(actor,'agent_'+run.id+'_intent',grounded.intent);
     const intentId=(created.body as {id:string}).id;
     const offers=(await tools.listOffers(intentId)).filter(o=>o.productId===grounded.intent.productId&&o.quantity===grounded.intent.quantity&&o.unit===grounded.intent.unit).sort((a,b)=>a.amountMinor-b.amountMinor||a.id.localeCompare(b.id));
-    const evaluations:{offerId:string;reasons:string[]}[]=[];let chosen:string|undefined;
-    for(const offer of offers){const evaluation=await tools.getOffer(intentId,offer.id);evaluations.push({offerId:offer.id,reasons:evaluation.reasons});if(evaluation.status==='ELIGIBLE'){chosen=offer.id;break;}}
-    if(!chosen)result={status:200,body:{...base,status:'NO_ELIGIBLE_OFFER',intentId,evaluations}};
+    const evaluations:{offerId:string;amountMinor:number;currency:string;status:string;reasons:string[];checks:{code:string;passed:boolean}[]}[]=[];let chosen:string|undefined;
+    // Evaluate all matching offers (at most 100) so selection and rejected alternatives are reviewable.
+    for(const offer of offers){const evaluation=await tools.getOffer(intentId,offer.id);evaluations.push({offerId:offer.id,amountMinor:offer.amountMinor,currency:offer.currency,...evaluation});if(!chosen&&evaluation.status==='ELIGIBLE')chosen=offer.id;}
+    const decision={budgetMinor:grounded.intent.maxAmountMinor,currency:grounded.intent.currency,deliveryDeadline:grounded.intent.deliveryDeadline,selectionRule:'LOWEST_PRICE_ELIGIBLE',selectedOfferId:chosen??null,evaluations};
+    if(!chosen)result={status:200,body:{...base,status:'NO_ELIGIBLE_OFFER',intentId,evaluations,decision}};
     else{
      const proposal=await tools.proposeOrder(intentId,chosen,'agent_'+run.id+'_proposal');
-     result={status:200,body:proposal.status===201?{...base,status:'PROPOSED',intentId,...proposal.body as object,proposalId:(proposal.body as {id:string}).id,requiresBuyerApproval:true}:{...base,status:'NO_ELIGIBLE_OFFER',intentId,evaluations:[...evaluations,{offerId:chosen,reasons:['OFFER_CHANGED_DURING_PROPOSAL']}]}};
+     if(proposal.status===201)result={status:200,body:{...base,status:'PROPOSED',intentId,...proposal.body as object,proposalId:(proposal.body as {id:string}).id,requiresBuyerApproval:true,decision}};
+     else{
+      const actual=(proposal.body as {evaluation:{status:string;reasons:string[];checks:{code:string;passed:boolean}[]}}).evaluation;
+      const current=evaluations.map(e=>e.offerId===chosen?{...e,...actual,reasons:[...actual.reasons,'OFFER_CHANGED_DURING_PROPOSAL']}:e);
+      result={status:200,body:{...base,status:'NO_ELIGIBLE_OFFER',intentId,evaluations:current,decision:{...decision,selectedOfferId:null,evaluations:current}}};
+     }
     }
    }
   }catch(error){

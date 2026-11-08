@@ -1,6 +1,6 @@
 # AgentPay OS — Codex Starter v1.2
 
-**Estado:** G1–G3 implementados, G5 verificado con fixtures y un caso real, y G6 con interfaz simulada local: core, API local, persistencia SQLite/Prisma, reservas, consentimiento y auditoría. 357 pruebas y TypeScript estricto aprobados. Adaptador pey y conciliación comercial probados con fixtures; pruebas bancarias aisladas QR/Push pagadas. Habilitación comercial real pendiente. Frontend local simulado, sin habilitación comercial real. Fecha: 2026-11-07.
+**Estado:** G1–G3 implementados, G5 verificado con fixtures y un caso real, y G6 con interfaz simulada local: core, API local, persistencia SQLite/Prisma, reservas, consentimiento y auditoría. 363 pruebas y TypeScript estricto aprobados. Adaptador pey y conciliación comercial probados con fixtures; pruebas bancarias aisladas QR/Push pagadas. Habilitación comercial real pendiente. G7-D validado para demo local simulada, sin habilitación comercial real. Fecha: 2026-11-07.
 
 ## Objetivo
 
@@ -105,3 +105,10 @@ Prueba la compra, revisa importe/beneficiario, aprueba el pedido y solicita el C
 ## Revisión de mejoras tras G6
 
 Cambiar pedido libera la reserva de la propuesta sin aprobar. Ante una interrupción de red, Recuperar la misma solicitud consulta primero y usa la clave original, sin duplicar envíos al proveedor. El navegador tolera almacenamiento bloqueado y siempre consulta al backend antes de mostrar un pago. Informe y pendientes en docs/revision-2026-11-07.md.
+
+
+## Demo del concurso (3 minutos)
+
+`pnpm web:contest` abre un perfil aislado en http://127.0.0.1:3003/ con interpretación local y pagos simulados. Cada arranque de servidor usa una DB ficticia nueva y conserva las anteriores; ejecutar de nuevo el launcher reutiliza la sesión sana. La demo habitual 3002 conserva sus datos.
+
+`pnpm demo:contest` ensaya cuatro escenarios con HTTP local y datos temporales nuevos, sin claves ni proveedores reales: compra completa, timeout, importe incorrecto y confirmación tardía. Deja reporte sanitizado en work/contest-report.json. Guion/preguntas/plan B: docs/concurso-demo-3-minutos.md. Matriz de pruebas y límites: docs/g7-demo-validation.md. No confundir G7-D con G7-R comercial o producción.

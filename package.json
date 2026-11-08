@@ -24,7 +24,9 @@
     "agent:configure": "tsx scripts/configure-openai.ts",
     "demo:agent": "tsx scripts/demo-agent.ts",
     "web:dev": "tsx apps/api/src/web-server.ts",
-    "web:up": "tsx scripts/web-up.ts"
+    "web:up": "tsx scripts/web-up.ts",
+    "web:contest": "tsx scripts/web-up.ts --contest",
+    "demo:contest": "tsx scripts/demo-contest.ts"
   },
   "devDependencies": {
     "typescript": "5.9.3",

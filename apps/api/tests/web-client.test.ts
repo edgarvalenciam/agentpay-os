@@ -17,7 +17,7 @@ class Element {
 }
 type Call={path:string;method:string;headers:Record<string,string>;body:unknown};
 const order={id:'order-test',snapshotHash:'a'.repeat(64),snapshot:{amountMinor:85000,productId:'coffee',quantity:2,unit:'kg',beneficiaryDisplayName:'Comercio SIMULADO',deliveryAt:'2026-11-08T18:00:00Z'}};
-async function client(options:{stored?:object;post?:(call:Call)=>unknown;storageBlocked?:boolean}={}){
+async function client(options:{stored?:object;post?:(call:Call)=>unknown;storageBlocked?:boolean;demoSession?:string}={}){
  const elements=new Map<string,Element>(),calls:Call[]=[],intervals:(()=>Promise<void>)[]=[];
  const el=(id:string)=>{if(!elements.has(id))elements.set(id,new Element());return elements.get(id)!;};
  el('timezone').value='America/Mexico_City';
@@ -31,7 +31,7 @@ async function client(options:{stored?:object;post?:(call:Call)=>unknown;storage
   fetch:async(path:string,init:{method:string;headers:Record<string,string>;body?:string})=>{
    const call={path,method:init.method,headers:init.headers,body:init.body?JSON.parse(init.body):undefined};calls.push(call);
    let body:unknown;
-   if(path==='/ui-api/session')body={csrf:'local-csrf',role:'BUYER',environment:'mock',agentProvider:'fixture'};
+   if(path==='/ui-api/session')body={csrf:'local-csrf',role:'BUYER',environment:'mock',agentProvider:'fixture',demoSession:options.demoSession};
    else if(init.method==='POST')body=options.post?await options.post(call):{};
    else if(path.endsWith('/payments'))body={environment:'mock',orderStatus:attempts.length?'PAYMENT_PENDING':'APPROVED',fulfillmentStatus:'RESERVED',attempts};
    else if(path.endsWith('/events'))body=[];
@@ -77,5 +77,15 @@ describe('browser recovery without duplicate financial operations',()=>{
   const ui=await client({stored:{order,orderId:order.id,requestStarted:true,payment:{environment:'mock',attempts:[{status:'CONFIRMED'}]}}});
   expect(ui.el('paid-result').classes.has('hidden')).toBe(true);
   expect(ui.el('payment-title').textContent).toBe('Solicitud por verificar');
+ });
+ it('shows the actual rejected alternative and available budget margin from the decision',async()=>{
+  const ui=await client({stored:{proposal:{snapshot:{...order.snapshot,currency:'MXN'},decision:{budgetMinor:100000,currency:'MXN',selectedOfferId:'coffee-850',evaluations:[{offerId:'coffee-850',amountMinor:85000,currency:'MXN',status:'ELIGIBLE',reasons:[],checks:[{code:'BUDGET',passed:true}]},{offerId:'coffee-1200',amountMinor:120000,currency:'MXN',status:'REJECTED',reasons:['BUDGET'],checks:[{code:'BUDGET',passed:false}]}]}}}});
+  const content=(e:Element):string=>e.textContent+' '+e.children.map(content).join(' ');
+  const proof=content(ui.el('decision-proof'));expect(proof).toContain('Margen disponible: $150.00');expect(proof).toContain('$1,200.00');expect(proof).toContain('Supera el presupuesto');expect(proof).not.toContain('descuento');
+ });
+ it('discards a previous contest purchase when a new isolated rehearsal starts, without financial requests',async()=>{
+  const ui=await client({demoSession:'contest-new-session',stored:{demoSession:'contest-old-session',order,orderId:order.id,requestStarted:true,paymentKey:'old-payment-key'}});
+  expect(ui.stored().orderId).toBeNull();expect(ui.stored().demoSession).toBe('contest-new-session');
+  expect(ui.calls.map(c=>c.path)).toEqual(['/ui-api/session']);expect(ui.el('global-error').textContent).toContain('Ensayo nuevo');
  });
 });

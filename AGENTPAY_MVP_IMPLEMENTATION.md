@@ -2,7 +2,7 @@
 
 **Versión:** 1.2 — inventario integral de API pey y plan de implementación (07-nov-2026)  
 **Fecha:** 2026-11-07  
-**Estado:** G1–G3 y G6 local verificados; G5 con fixtures y un caso real; G4 técnico y diagnósticos bancarios verificados, integración comercial real bloqueada por PEY-001/002; G7 pendiente
+**Estado:** G1–G3 y G6 local verificados; G5 con fixtures y un caso real; G4 técnico y diagnósticos bancarios verificados, integración comercial real bloqueada por PEY-001/002; G7-D simulado verificado, G7-R pendiente
 **Objetivo:** Construir y demostrar una compra iniciada por IA, validada por políticas deterministas y pagada mediante CoDi Push a través de pey, con confirmación financiera verificable.
 
 > **Principio:** El agente propone; el core valida; el comprador solicita el cobro y autoriza en su banco; el proveedor financiero comunica el resultado; AgentPay concilia; el comercio cumple la orden.
@@ -66,7 +66,7 @@
 | 4 | Integración real pey/CoDi | Adaptador/conciliación con fixtures; QR y Push diagnósticos pagados; PEY-001/002 abiertos | G4 técnico; comercial real pendiente |
 | 5 | Agente OpenAI | Fixtures y un caso real positivo; evaluación lingüística amplia pendiente | G5 acotado |
 | 6 | Frontend comprador/comercio | Demo local fixture/mock verificada; sin claves ni cobros reales | G6 local |
-| 7 | E2E, seguridad y demo | ☐ Pendiente | G7 |
+| 7 | E2E, seguridad y demo | Suite, ensayo HTTP, navegador y guion verificados para demo local simulada | G7-D; G7-R comercial pendiente |
 
 **Definición de éxito del prototipo (G7-D):** Una instrucción en lenguaje natural genera una propuesta válida; el usuario ve el detalle y solicita el cobro; el mock inicia una solicitud; el sistema valida una confirmación simulada y el comercio ve la orden pagada con distintivo inequívoco **SIMULADO**.
 
@@ -526,15 +526,15 @@ Implementa SOLO Fase 6. Construye las pantallas definidas en la sección 2, con 
 
 ### Checklist
 
-- [ ] Ejecutar suite unit + integration + E2E.
-- [ ] Verificar variables de entorno y ausencia de secretos en git.
-- [ ] Validar manejo de datos personales y minimización de teléfono.
-- [ ] Preparar seed reproducible y reset de demo sin borrar evidencia real.
-- [ ] Ensayar flujo positivo y rechazo por política.
-- [ ] Ensayar plan B simulado, identificado explícitamente.
-- [ ] Preparar demo de 3 minutos y narrativa de diferenciación.
-- [ ] Mostrar auditoría y conciliación como valor diferencial.
-- [ ] Documentar límites reales: autorización bancaria obligatoria, dependencia CoDi y sin garantía de entrega.
+- [x] Ejecutar suite unit + integration + E2E.
+- [x] Verificar variables de entorno y ausencia de secretos en git.
+- [x] Validar manejo de datos personales y minimización de teléfono.
+- [x] Preparar seed reproducible y reset de demo sin borrar evidencia real.
+- [x] Ensayar flujo positivo y rechazo por política.
+- [x] Ensayar plan B simulado, identificado explícitamente.
+- [x] Preparar demo de 3 minutos y narrativa de diferenciación.
+- [x] Mostrar auditoría y conciliación como valor diferencial.
+- [x] Documentar límites reales: autorización bancaria obligatoria, dependencia CoDi y sin garantía de entrega.
 
 ### Gate G7 — Definition of Done
 
@@ -764,3 +764,8 @@ Frontend local adaptable implementado y probado con perfil fixture/mock: pedido,
 ## Revisión posterior a G6 — 2026-11-07
 
 Roadmap sincronizado con evidencia de docs/progress.md. Mejoras sobre G6: liberación idempotente de reservas de propuestas sin aprobar, recuperación explícita de la operación de solicitud con la clave original, tolerancia a almacenamiento bloqueado y verificación estricta del perfil local. No habilita G7 ni pagos comerciales reales. Ver docs/revision-2026-11-07.md para alcance, pruebas y límites. Los checklists históricos y prompts de inicio no sustituyen el estado global actual.
+
+
+## Cierre G7-D de demo — 2026-11-07
+
+Autorizada revisión adicional y preparación para concurso de 3 minutos. Comparación de ofertas explicada con checks del core, escenario de concurso aislado, cookies separadas y ensayo automatizado de cuatro escenarios. Suite 363/363, typecheck y pruebas de navegador aprobados. G7-D solo para fixture/mock local; G7-R comercial real y producción pendientes. Ver docs/g7-demo-validation.md y docs/concurso-demo-3-minutos.md. Cero nuevas llamadas OpenAI/pey.
