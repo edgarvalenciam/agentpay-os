@@ -16,6 +16,8 @@ import { loadPeyPaymentOptions } from '../src/pey-payment-config.js';
 let dir:string,db:Database,inbox:Database,app:ReturnType<typeof buildApp>,receiver:ReturnType<typeof buildPeyWebhookReceiver>,config:PeyPaymentOptions,now:string,processor:PeyInboxProcessor;
 let submission:Record<string,unknown>|null,calls:{method:string;path:string}[],scenario:'OK'|'TIMEOUT'|'503'|'PENDING_BANK'|'BAD_RECEIPT',paid:boolean,queryMissing:boolean;
 let queryPatch:Record<string,unknown>;
+let discoveryItems:Record<string,unknown>[]|null,bankUnavailable:boolean;
+let duringDiscovery:(()=>Promise<void>)|undefined;
 let beforeReceipt:(()=>Promise<void>)|undefined;
 const bankId='fixture-bank',apiId='fixture-api',bankName='Fixture Merchant',phone='5500000000',clabe='000000000000000000';
 const signingSecret='whsec_'+randomBytes(32).toString('base64'),encryptionKey=randomBytes(32);
@@ -24,11 +26,16 @@ const headers=(actor=0,key='fixture-payment-key')=>({authorization:'Bearer '+cre
 function transactionId(){return 'fixture-tx-'+String((submission?.metadata as Record<string,string>|undefined)?.paymentAttemptId??'unknown');}
 const transport:typeof fetch=async(url,init)=>{
  const path=new URL(String(url)).pathname;calls.push({method:init?.method??'GET',path});
+ if(path.startsWith('/bank-account/')&&bankUnavailable)return new Response('{}',{status:404});
  if(path.startsWith('/bank-account/'))return new Response(JSON.stringify({id:bankId,name:bankName,clabe,codiStatus:scenario==='PENDING_BANK'?'PENDING':'ACTIVE'}));
  if(path==='/codi/pn'){
   submission=JSON.parse(String(init?.body));await beforeReceipt?.();
   if(scenario==='TIMEOUT')throw new Error('fixture lost response');
   return new Response(JSON.stringify(scenario==='BAD_RECEIPT'?{}:{transactionId:transactionId(),codiId:'12345678901234567890'}),{status:scenario==='503'?503:200});
+ }
+ if(path==='/transaction/api-key'){
+  await duringDiscovery?.();
+  return new Response(JSON.stringify({items:discoveryItems??[{id:transactionId(),status:paid?'PAID':'PENDING',amount:submission?.amount??850,currency:'MXN',paymentMethod:'CODI',payableType:'API_CODI_PN',metadata:{externalMetadata:submission?.metadata??{}}}],nextToken:null}));
  }
  if(path.startsWith('/transaction/')){
   if(queryMissing)return new Response('{}',{status:404});
@@ -49,7 +56,7 @@ async function submitted(){const o=await order();arm(o);const r=await request(o)
 function wire(){return {type:'codi.pn.payment_received',amount:submission!.amount,apiKeyId:apiId,bankAccountId:bankId,numRef:submission!.numRef,transactionId:transactionId(),datePaid:Math.floor(Date.parse(now)/1000),metadata:{externalMetadata:submission!.metadata}};}
 async function deliver(body:unknown=wire(),id='fixture-pey-event'){const raw=JSON.stringify(body),timestamp=new Date();return receiver.inject({method:'POST',url:'/v1/webhooks/pey',headers:{'content-type':'application/json','webhook-id':id,'webhook-timestamp':String(Math.floor(timestamp.getTime()/1000)),'webhook-signature':new Webhook(signingSecret).sign(id,timestamp,raw)},payload:raw});}
 beforeEach(async()=>{
- dir=await mkdtemp(join(tmpdir(),'agentpay-pey-g4-'));now='2026-11-07T18:00:00.123Z';submission=null;calls=[];scenario='OK';paid=false;queryMissing=false;beforeReceipt=undefined;queryPatch={};
+ dir=await mkdtemp(join(tmpdir(),'agentpay-pey-g4-'));now='2026-11-07T18:00:00.123Z';submission=null;calls=[];scenario='OK';paid=false;queryMissing=false;beforeReceipt=undefined;queryPatch={};discoveryItems=null;bankUnavailable=false;duringDiscovery=undefined;
  for(const name of ['commerce','inbox']){const path=join(dir,name+'.db');await writeFile(path,'',{mode:0o600});execFileSync(process.execPath,[resolve('node_modules/prisma/build/index.js'),'migrate','deploy','--schema','packages/database/prisma/schema.prisma'],{env:{...process.env,DATABASE_URL:'file:'+path},stdio:'pipe'});}
  db=new Database('file:'+join(dir,'commerce.db'));inbox=new Database('file:'+join(dir,'inbox.db'));await seedDemo(db,now);
  await db.client.merchantPaymentAccount.update({where:{id:'account-demo'},data:{provider:'pey',providerBankAccountId:bankId,beneficiaryDisplayName:bankName}});
@@ -58,6 +65,39 @@ beforeEach(async()=>{
 },30000);
 afterEach(async()=>{await app?.close();await receiver?.close();await db?.close();await inbox?.close();await rm(dir,{recursive:true,force:true});});
 describe('G4 real adapter wired with fixture transport; no bank calls',()=>{
+ it('recovers a lost receipt without webhook through authenticated discovery and notifies the merchant once',async()=>{
+  scenario='TIMEOUT';const {o,attemptId}=await submitted();config.gateway=gateway();paid=true;
+  const r=await app.inject({method:'POST',url:`/v1/orders/${o.id}/reconcile`,headers:headers(),payload:{}});expect(r.statusCode).toBe(200);expect(r.json().orderStatus).toBe('PAID');
+  expect((await db.client.paymentAttempt.findUniqueOrThrow({where:{id:attemptId}})).providerTransactionId).toBe(transactionId());
+  await new OutboxDispatcher(db,()=>now).drain();await app.inject({method:'POST',url:`/v1/orders/${o.id}/reconcile`,headers:headers(),payload:{}});await deliver();await processor.drain();await new OutboxDispatcher(db,()=>now).drain();
+  expect(await db.client.providerTransaction.count()).toBe(1);expect(await db.client.merchantNotification.count()).toBe(1);expect((await db.client.product.findUniqueOrThrow({where:{id:'coffee'}})).stock).toBe(8);
+  const notice=await app.inject({url:'/v1/merchants/merchant-demo/notifications',headers:headers(1)});expect(notice.statusCode).toBe(200);expect(notice.body).toContain(o.id);expect(notice.body).toContain('REAL');expect(notice.body).not.toMatch(/5500000000|fixture-api-key|clabe/);
+  expect(calls.filter(c=>c.method==='POST')).toHaveLength(1);
+ });
+ it('binds a discovered PENDING transaction without treating it as paid or submitting again',async()=>{
+  scenario='BAD_RECEIPT';const {o,attemptId}=await submitted();const r=await app.inject({method:'POST',url:`/v1/orders/${o.id}/reconcile`,headers:headers(),payload:{}});expect(r.statusCode).toBe(200);expect((await db.client.paymentAttempt.findUniqueOrThrow({where:{id:attemptId}})).status).toBe('SUBMISSION_UNKNOWN');expect(await db.client.providerTransaction.count()).toBe(0);expect(await db.client.merchantNotification.count()).toBe(0);expect(calls.filter(c=>c.method==='POST')).toHaveLength(1);
+ });
+ it('keeps an unknown attempt blocked when no authenticated transaction matches',async()=>{
+  scenario='TIMEOUT';const {o,attemptId}=await submitted();discoveryItems=[];const r=await app.inject({method:'POST',url:`/v1/orders/${o.id}/reconcile`,headers:headers(),payload:{}});expect(r.statusCode).toBe(200);expect((await db.client.paymentAttempt.findUniqueOrThrow({where:{id:attemptId}})).providerTransactionId).toBeNull();expect(calls.filter(c=>c.method==='POST')).toHaveLength(1);
+ });
+ it('does not bind either ID when discovery finds two transactions for the same attempt',async()=>{
+  scenario='TIMEOUT';const {o,attemptId}=await submitted();const candidate={status:'PAID',amount:850,currency:'MXN',paymentMethod:'CODI',payableType:'API_CODI_PN',metadata:{externalMetadata:submission!.metadata}};discoveryItems=[{...candidate,id:'first'},{...candidate,id:'second'}];
+  expect((await app.inject({method:'POST',url:`/v1/orders/${o.id}/reconcile`,headers:headers(),payload:{}})).statusCode).toBe(503);expect((await db.client.paymentAttempt.findUniqueOrThrow({where:{id:attemptId}})).providerTransactionId).toBeNull();expect(await db.client.providerTransaction.count()).toBe(0);
+ });
+ it('holds a discovered PAID transaction when the receiving account cannot be verified',async()=>{
+  scenario='TIMEOUT';const {o}=await submitted();paid=true;bankUnavailable=true;expect((await app.inject({method:'POST',url:`/v1/orders/${o.id}/reconcile`,headers:headers(),payload:{}})).statusCode).toBe(503);expect(await db.client.providerTransaction.count()).toBe(0);expect(await db.client.merchantNotification.count()).toBe(0);expect((await db.client.product.findUniqueOrThrow({where:{id:'coffee'}})).stock).toBe(10);
+ });
+ it('deduplicates a signed callback that arrives while transaction discovery is in flight',async()=>{
+  scenario='TIMEOUT';const {o}=await submitted();paid=true;duringDiscovery=async()=>{await deliver();await processor.drain();};const r=await app.inject({method:'POST',url:`/v1/orders/${o.id}/reconcile`,headers:headers(),payload:{}});expect(r.statusCode).toBe(200);expect(r.json().orderStatus).toBe('PAID');await new OutboxDispatcher(db,()=>now).drain();expect(await db.client.providerTransaction.count()).toBe(1);expect(await db.client.merchantNotification.count()).toBe(1);expect(calls.filter(c=>c.method==='POST')).toHaveLength(1);
+ });
+
+ it('reports conflicting discovered and callback IDs without replacing a confirmed payment',async()=>{
+  scenario='TIMEOUT';const {o,attemptId}=await submitted();paid=true;
+  discoveryItems=[{id:'conflicting-discovery-tx',status:'PAID',amount:850,currency:'MXN',paymentMethod:'CODI',payableType:'API_CODI_PN',metadata:{externalMetadata:submission!.metadata}}];
+  duringDiscovery=async()=>{await deliver();await processor.drain();};
+  const r=await app.inject({method:'POST',url:`/v1/orders/${o.id}/reconcile`,headers:headers(),payload:{}});expect(r.statusCode).toBe(409);
+  const a=await db.client.paymentAttempt.findUniqueOrThrow({where:{id:attemptId}});expect(a.status).toBe('CONFIRMED');expect(a.providerTransactionId).toBe(transactionId());expect(await db.client.providerTransaction.count()).toBe(1);expect(await db.client.providerResource.count({where:{resourceId:'conflicting-discovery-tx'}})).toBe(0);expect(calls.filter(c=>c.method==='POST')).toHaveLength(1);
+ });
  it('keeps default flags blocked without storing attempts or using credentials over HTTP',async()=>{
   const o=await order();expect((await request(o)).statusCode).toBe(403);expect(calls).toHaveLength(0);expect(await db.client.paymentAttempt.count()).toBe(0);expect((await app.inject({url:'/health'})).json().realPaymentsEnabled).toBe(false);
  });

@@ -1,6 +1,6 @@
 # AgentPay OS — Codex Starter v1.2
 
-**Estado:** G1, G2 y G3 implementados: core, API local, persistencia SQLite/Prisma, reservas, consentimiento y auditoría. 195 pruebas y TypeScript estricto aprobados. Adaptador pey y conciliación probados con fixtures; prueba bancaria pendiente. Sin frontend. Fecha: 2026-11-07.
+**Estado:** G1, G2 y G3 implementados: core, API local, persistencia SQLite/Prisma, reservas, consentimiento y auditoría. 256 pruebas y TypeScript estricto aprobados. Adaptador pey y conciliación comercial probados con fixtures; pruebas bancarias aisladas QR/Push pagadas. Habilitación comercial real pendiente. Sin frontend. Fecha: 2026-11-07.
 
 ## Objetivo
 
@@ -12,7 +12,7 @@ Infraestructura B2B2C para comercio iniciado por IA, validado por políticas det
 2. G1, G2 y G3 ya están implementados. Ejecuta los comandos de reproducción de abajo.
 3. `pnpm demo` demuestra API y persistencia sin banco ni frontend.
 4. El prompt `prompts/START_CODEX.md` corresponde al arranque histórico de G1; no es la tarea siguiente.
-5. Siguiente paso: completar los requisitos operativos de G4 y su prueba bancaria autorizada. No activar pagos reales ni producción desde este paquete.
+5. Siguiente paso: resolver compatibilidad de cuenta y evidencia de beneficiario para el flujo comercial real de G4. No activar pagos reales ni producción desde este paquete.
 
 ## Archivos
 
@@ -85,4 +85,6 @@ Receptor dedicado con SDK Standard Webhooks y almacenamiento cifrado; sin accion
 
 ## G4 — Adaptador implementado, banco pendiente
 
-`pnpm demo:pey` demuestra el contrato con fixtures sin credenciales ni cobros. Ver `docs/g4-pey-integration.md` para conciliación, recuperación, configuración privada y límites. G4-R no está aprobado; los pagos siguen desactivados.
+`pnpm demo:pey` demuestra el contrato con fixtures sin credenciales ni cobros. Ver `docs/g4-pey-integration.md` para conciliación, recuperación, configuración privada y límites. Las pruebas bancarias aisladas QR/Push están confirmadas; el E2E comercial real sigue pendiente y los pagos generales permanecen desactivados.
+
+`pnpm demo:pey:recovery` prueba una orden cuyo recibo se pierde: recupera la transacción sin reenviar, liquida una sola vez y muestra una notificación autenticada al comercio. Todo con fixtures; no requiere secretos reales.

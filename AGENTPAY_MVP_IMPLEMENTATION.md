@@ -741,3 +741,7 @@ Un centavo MXN pagado desde HSBC, con API PAID, evento Standard Webhooks válido
 ## Evidencia real posterior: Push pagado — 2026-11-07
 
 También se confirmó la prueba diagnóstica CoDi Push de un centavo mediante API PAID, webhook firmado y capturas HSBC con beneficiario/folio coincidentes. El transporte bancario QR/Push y la recepción real de webhooks tienen evidencia. Resta integrar el E2E comercial real, resolver compatibilidad de cuenta portal/API y discrepancia metadata.clabe. Corregido formato de codiId con evidencia bancaria: 20 caracteres hexadecimales; 73 regresiones focalizadas y typecheck aprobados. No hay frontend ni habilitación general de pagos.
+
+## Flujo comercial con recuperación verificado — 2026-11-07
+
+Se incorporó descubrimiento paginado autenticado para recuperar transactionId perdido sin reenviar POST. Orden, conciliación, inventario y bandeja local del comercio verificados con transporte ficticio; demos normal y de recibo perdido aprobadas. Suite completa 256/256 y typecheck salida 0. No hubo nuevos cobros ni frontend. La prueba bancaria comercial sigue bloqueada por compatibilidad de cuenta y semántica de metadata.clabe; los diagnósticos QR/Push anteriores siguen siendo evidencia bancaria separada.

@@ -107,3 +107,9 @@
 ## ADR — Prueba operativa aislada con cuenta vinculada (2026-11-07)
 
 Tras autorización explícita de un centavo hacia la cuenta pública de pruebas y verificación visible del vínculo en portal, se permite una solicitud diagnóstica aislada sin bankAccountId, opción documentada de pey. No se elimina la exigencia de cuenta/identificadores del servicio comercial. El diagnóstico no consume inventario, no crea órdenes ficticias, no confirma pagos y no habilita pagos generales. El marcador exclusivo previo al HTTP bloquea cualquier reenvío incluso ante errores ambiguos. La evidencia bancaria y metadatos permanecen privados. G4-R comercial continúa pendiente.
+
+## ADR-016 — Recuperar identificador perdido por consulta autenticada
+
+Fecha 2026-11-07. Implementada en G4 con fixtures tras observar recuperación manual en pruebas bancarias. Se usa el endpoint documentado GET /transaction/api-key; no se supone idempotencia upstream ni se reenvía POST. Se comparan orden/intento/entorno exactos y se exigen método, tipo e importe. Debe completarse el listado dentro de cinco páginas/80 registros y límites de tamaño; no devolver un candidato parcial ni elegir entre varios IDs.
+
+El descubrimiento solo vincula un recurso: no acredita PAID ni beneficiario. Se conserva la consulta individual, verificación de cuenta y liquidación atómica existentes. Ante callback concurrente, mismo ID reutilizable y distinto ID conflictivo, sin reemplazar pago confirmado. Un 404 o discrepancia del beneficiario no se transforma en éxito por confianza en metadata. No se consume inventario ni entrega notificación hasta completar todos los controles. La paginación no garantiza snapshot estable del proveedor; se limita la automatización al perfil local y se conserva conciliación individual, deduplicación y manejo de conflicto.

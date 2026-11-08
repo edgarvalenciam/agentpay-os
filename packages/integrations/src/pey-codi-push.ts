@@ -58,6 +58,28 @@ export class PeyCodiPushGateway implements PaymentGateway {
   if(!transactionId)throw new PeyReadError('TRANSACTION_ID_REQUIRED');
   try{const result=transactionSchema.parse(await this.call('GET','/transaction/'+encodeURIComponent(transactionId)));if(result.id!==transactionId)throw new Error();return result;}catch(error){if(error instanceof PeyReadError)throw error;throw new PeyReadError('INVALID_TRANSACTION_RESPONSE');}
  }
+ /** A bounded, complete scan of authenticated pages locates an ID; it never confirms a payment. */
+ async findPushTransaction(input:{orderId:string;attemptId:string;amountMinor:number}):Promise<string|null>{
+  if(!id.safeParse(input.orderId).success||!id.safeParse(input.attemptId).success||!Number.isSafeInteger(input.amountMinor)||input.amountMinor<=0)throw new PeyReadError('INVALID_DISCOVERY_INPUT');
+  const pageSchema=z.object({items:z.array(z.object({id,status:z.enum(['PENDING','PAID'])}).passthrough()).max(80),nextToken:z.string().min(1).max(4096).nullable()});
+  let token:string|null=null;const seen=new Set<string>(),matches=new Set<string>();
+  try{
+   for(let page=0;page<5;page++){
+    const data=pageSchema.parse(await this.call('GET','/transaction/api-key'+(token?'?nextToken='+encodeURIComponent(token):'')));
+    for(const item of data.items){
+     const metadata=z.object({externalMetadata:z.object({orderId:z.string(),paymentAttemptId:z.string(),environment:z.string()}).passthrough()}).passthrough().safeParse(item.metadata);
+     if(!metadata.success)continue;const ext=metadata.data.externalMetadata;
+     if(ext.orderId!==input.orderId||ext.paymentAttemptId!==input.attemptId||ext.environment!=='real')continue;
+     if(item.currency!=='MXN'||item.paymentMethod!=='CODI'||item.payableType!=='API_CODI_PN'||mxnToMinor(item.amount as string|number)!==input.amountMinor)throw new PeyReadError('DISCOVERY_CORRELATION_MISMATCH');
+     matches.add(item.id);if(matches.size>1)throw new PeyReadError('AMBIGUOUS_PROVIDER_TRANSACTIONS');
+    }
+    token=data.nextToken;
+    if(token===null)return [...matches][0]??null;
+    if(seen.has(token))throw new PeyReadError('REPEATED_PROVIDER_CURSOR');seen.add(token);
+   }
+   throw new PeyReadError('PROVIDER_DISCOVERY_INCOMPLETE');
+  }catch(error){if(error instanceof PeyReadError)throw error;throw new PeyReadError('INVALID_DISCOVERY_RESPONSE');}
+ }
  async submit(input:PushSubmission):Promise<PushReceipt>{
   this.assertAuthorized(input);
   try{const bank=await this.getBankAccount(input.providerBankAccountId!);if(bank.codiStatus!=='ACTIVE'||bank.name!==input.beneficiaryDisplayName)throw new PeyPreflightError('BENEFICIARY_NOT_READY');}

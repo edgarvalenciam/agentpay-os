@@ -19,7 +19,8 @@
     "pey:configure-account": "tsx scripts/configure-pey-account.ts",
     "demo:pey": "tsx scripts/demo-pey-contract.ts",
     "pey:check-account": "tsx scripts/check-pey-account.ts",
-    "pey:check-key": "tsx scripts/check-pey-key.ts"
+    "pey:check-key": "tsx scripts/check-pey-key.ts",
+    "demo:pey:recovery": "tsx scripts/demo-pey-contract.ts --lost-receipt"
   },
   "devDependencies": {
     "typescript": "5.9.3",

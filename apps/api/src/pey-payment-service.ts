@@ -100,8 +100,25 @@ export class PeyPaymentService {
   return {outcome,duplicate:false};
  }
  async poll(actor:Actor,orderId:string){
-  const attempts=await this.db.read(async tx=>{await this.owned(tx,actor,orderId);return tx.paymentAttempt.findMany({where:{orderId,provider:'pey',providerTransactionId:{not:null}}});});
-  for(const a of attempts){
+  const attempts=await this.db.read(async tx=>{await this.owned(tx,actor,orderId);return tx.paymentAttempt.findMany({where:{orderId,provider:'pey',status:{in:['SUBMISSION_PENDING','SUBMISSION_UNKNOWN','SUBMITTED','PAYMENT_PENDING','RECONCILIATION_EXCEPTION','CONFIRMED']}}});});
+  for(let a of attempts){
+   if(!a.providerTransactionId){
+    let transactionId:string|null;
+    try{transactionId=await this.config.gateway.findPushTransaction({orderId:a.orderId,attemptId:a.id,amountMinor:a.requestedAmountMinor});}catch{throw new ApiError(503,'PEY_TRANSACTION_DISCOVERY_UNAVAILABLE');}
+    if(!transactionId)continue;
+    a=await this.db.write(async tx=>{
+     const current=await tx.paymentAttempt.findUniqueOrThrow({where:{id:a.id}});
+     // A callback may have bound the resource while discovery was in flight.
+     if(current.providerTransactionId){if(current.providerTransactionId!==transactionId)throw new ApiError(409,'PAYMENT_RECOVERY_CONFLICT');return current;}
+     if(!['SUBMISSION_PENDING','SUBMISSION_UNKNOWN','SUBMITTED','PAYMENT_PENDING','RECONCILIATION_EXCEPTION'].includes(current.status))throw new ApiError(409,'PAYMENT_RECOVERY_CONFLICT');
+     const resource=await tx.providerResource.findUnique({where:{provider_resourceType_resourceId:{provider:'pey',resourceType:'PUSH_TRANSACTION',resourceId:transactionId!}}});
+     if(resource&&resource.attemptId!==current.id)throw new ApiError(409,'RESOURCE_ALREADY_USED');
+     if(!resource)await tx.providerResource.create({data:{id:randomUUID(),attemptId:current.id,provider:'pey',resourceType:'PUSH_TRANSACTION',resourceId:transactionId!}});
+     const recovered=await tx.paymentAttempt.update({where:{id:current.id},data:{providerTransactionId:transactionId}});
+     await this.audit(tx,current.orderId,'PEY_TRANSACTION_ID_RECOVERED',{attemptId:current.id,environment:'real',source:'AUTHENTICATED_QUERY'});
+     return recovered;
+    });
+   }
    let result:PeyTransaction,bank:PeyBankAccount;
    try{result=await this.config.gateway.getTransaction(a.providerTransactionId!);if(result.status!=='PAID')continue;bank=await this.config.gateway.getBankAccount(a.providerBankAccountId!);}catch{throw new ApiError(503,'PEY_TRANSACTION_UNAVAILABLE');}
    const reasons:string[]=[];

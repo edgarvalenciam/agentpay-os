@@ -18,7 +18,7 @@
 
 ## G4
 - [x] Tests contractuales de los campos de pey sobre fixtures publicados.
-- [ ] Prueba financiera real de bajo monto solo si autorizada por pagador y beneficiario; registrar evidencia verificable sin exponer PII.
+- [x] Prueba financiera real de bajo monto solo si autorizada por pagador y beneficiario; registrar evidencia verificable sin exponer PII.
 - [ ] Si falla la habilitación, declarar G4-R no cumplido y mantener una demo etiquetada MOCK, sin engañar al juez.
 
-G4 técnico implementado con fixtures; G4-R bancario pendiente. Ver docs/g4-pey-integration.md. La consulta de cuenta existente está implementada; el alta de cuentas sigue fuera de alcance.
+Pruebas diagnósticas bancarias QR y Push confirmadas. G4 comercial real pendiente: cuenta del portal devuelve 404 en consulta y metadata.clabe requiere aclaración. Recuperación de transactionId por consulta autenticada implementada con fixtures; sin reenviar. Ver docs/g4-pey-integration.md. La consulta de cuenta existente está implementada; el alta de cuentas sigue fuera de alcance.

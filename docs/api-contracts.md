@@ -82,3 +82,7 @@ Fuentes de implementación: [Prisma SQLite v6](https://www.prisma.io/docs/orm/v6
 ## Extensión G3 vigente
 
 G2 continúa reproducible sin configurar simulador. Con MOCK_WEBHOOK_SECRET se habilitan solicitud/consulta/conciliación simuladas, evento crudo firmado y bandeja de comercio; controles de operador requieren secreto adicional distinto. Toda respuesta de pago y resumen de orden mock lleva SIMULADO. `pnpm demo:payments` verifica el flujo completo local. El comportamiento «sin rutas financieras» de las secciones G2 se refiere a su configuración comercial original; ver `g3-mock-payments.md` para contrato G3 completo.
+
+## Recuperación pey ante recibo perdido (G4)
+
+POST /v1/orders/:id/reconcile mantiene cuerpo vacío y autenticación comprador/comercio dueño. Para un intento incierto sin ID, descubre un único recurso por consultas autenticadas paginadas. Devuelve estado actual si no hay coincidencia; 503 PEY_TRANSACTION_DISCOVERY_UNAVAILABLE cuando la búsqueda es incompleta, inválida o ambigua; 409 PAYMENT_RECOVERY_CONFLICT si un callback vinculó un ID distinto. No reenvía la solicitud financiera. Después de vincular el ID continúa conciliación individual y verificación de beneficiario. La bandeja GET /v1/merchants/:id/notifications solo contiene efectos conciliados y mantiene etiqueta REAL/SIMULADO, sin PII.

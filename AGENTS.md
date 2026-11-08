@@ -93,3 +93,11 @@ El usuario indicó «ok hagamoslo» tras proponer adaptador pey y conciliación.
 ## Autorización diagnóstica QR — 2026-11-07
 
 Usuario eligió explícitamente QR tras definir prueba única de $0.01 MXN hacia la cuenta pública de pruebas de Ramón. Se permite diagnóstico QR aislado, no habilitación general del proveedor QR ni frontend. Registro exclusivo previo al POST, sin replay ante incertidumbre; la imagen proviene de pey, nunca de generación artística. No afirmar pago por crear QR. Puede recibir múltiples pagos: indicar un solo pago y reconciliar cada transacción si llega evidencia.
+
+## Continuación del flujo comercial G4 — 2026-11-07
+
+«Perfecto sigamos» autoriza continuar orden/pago/conciliación/notificación con pruebas ficticias; no autoriza cobros adicionales, alta de cuentas, G5 ni frontend. Pruebas bancarias diagnósticas QR y Push ya confirmadas, sin afirmar E2E comercial real.
+
+- Recuperación de recibo perdido puede consultar GET /transaction/api-key: metadata exacta, páginas acotadas y completas, identidad única; nunca reenviar POST ni confirmar por PENDING.
+- No omitir controles del receptor para sortear 404 de cuentas del portal o la discrepancia de metadata.clabe. Mantener bloqueos visibles/documentados.
+- Una transacción recuperada se vincula atómicamente antes de conciliación; callback concurrente o duplicado no debe reemplazar IDs confirmados ni consumir inventario/notificar dos veces.
