@@ -1,6 +1,6 @@
 # AgentPay OS — Codex Starter v1.2
 
-**Estado:** G1–G3 implementados y G5 verificado con fixtures y un caso real: core, API local, persistencia SQLite/Prisma, reservas, consentimiento y auditoría. 332 pruebas y TypeScript estricto aprobados. Adaptador pey y conciliación comercial probados con fixtures; pruebas bancarias aisladas QR/Push pagadas. Habilitación comercial real pendiente. Sin frontend. Fecha: 2026-11-07.
+**Estado:** G1–G3 implementados, G5 verificado con fixtures y un caso real, y G6 con interfaz simulada local: core, API local, persistencia SQLite/Prisma, reservas, consentimiento y auditoría. 346 pruebas y TypeScript estricto aprobados. Adaptador pey y conciliación comercial probados con fixtures; pruebas bancarias aisladas QR/Push pagadas. Habilitación comercial real pendiente. Frontend local simulado, sin habilitación comercial real. Fecha: 2026-11-07.
 
 ## Objetivo
 
@@ -94,3 +94,9 @@ Receptor dedicado con SDK Standard Webhooks y almacenamiento cifrado; sin accion
 `pnpm demo:agent` demuestra la petición «2 kg de café por máximo $1,000 mañana» hasta una propuesta de $850 pendiente de aprobación. Validación independiente del modelo, políticas, fechas locales, idempotencia y reinicio cubiertos por pruebas. El texto no reconocido pide aclaración. No crea órdenes ni cobros.
 
 Conexión Responses y un caso positivo con gpt-5.4-mini real verificados. Calidad lingüística general y casos adversos reales aún por evaluar. `pnpm agent:configure` guarda clave/modelo privados sin activarlos. AGENT_PROVIDER=disabled por defecto. Ver docs/g5-shopping-agent.md, tasks/05-openai.md y docs/pey-pendientes.md. Aplicar pnpm db:migrate a la DB comercial local antes de habilitar G5; la migración 007 se verificó en DBs temporales, no se aplicó a runtime operativo.
+
+## G6 — Abrir la interfaz local
+
+`pnpm web:up` inicia o reutiliza http://127.0.0.1:3002 con las vistas Comprar, Comercio y Simulador. `pnpm web:dev` es la alternativa en primer plano. Sin claves OpenAI/pey, sin llamadas pagadas ni dinero real. El servidor aplica migraciones en una DB de demo propia sin resetear datos existentes.
+
+Prueba la compra, revisa importe/beneficiario, aprueba el pedido y solicita el CoDi ficticio. Confírmalo en Simulador y vuelve a consultar. Comercio muestra una notificación y permite preparar solo pedidos pagados y listos. No hay endpoints de proveedor ni tokens privados en el navegador. Ver docs/g6-frontend.md para alcance local, sesión, límites y pruebas.

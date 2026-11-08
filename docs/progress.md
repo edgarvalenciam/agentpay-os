@@ -11,7 +11,7 @@
 | 3 — Mock/conciliación (G3) | APROBADO | 122 tests, typecheck, demo HTTP SIMULADO | No valida integración bancaria |
 | 4 — Pey real (G4) | Diagnósticos bancarios QR y Push pagados; integración comercial pendiente | Ambos API PAID + webhooks firmados; evidencia bancaria | Cuenta portal no consultable (404); discrepancia metadata.clabe; no E2E comercial real |
 | 5 — OpenAI (G5) | Código y caso positivo con modelo real verificados | 332 tests; Responses HTTP 200; propuesta y replay idempotente | Ampliar evaluaciones reales; catálogo local de demo |
-| 6 — Frontend (G6) | NO INICIADA | — | — |
+| 6 — Frontend (G6) | APROBADO alcance demo local simulado | 346 tests; typecheck; recorrido navegador móvil/escritorio | Sin perfil real ni autenticación pública |
 | 7 — E2E/demo (G7) | NO INICIADA | — | — |
 
 **Estado actual: core/API/pagos y agente ejecutables. Pruebas bancarias aisladas QR/Push confirmadas; flujo comercial y agente verificados con fixtures. No equivalen a habilitación comercial real ni evaluación de un modelo real.**
@@ -206,3 +206,17 @@ Usuario indicó «listo intentalo», autorizando un nuevo intento acotado. Se co
 Resultado observado: **OpenAI HTTP 200, API comercial HTTP 200, status PROPOSED**. Pedido de 2 kg de café por máximo $1,000 para mañana interpretado y verificado contra el texto y el catálogo demo; propuesta $850 MXN, requiresBuyerApproval=true. Replay interno idempotente idéntico, sin segunda llamada al modelo. Órdenes aprobadas 0, consentimientos 0, intentos de pago 0, llamadas bancarias 0. DB temporal migrada y eliminada tras verificación; no cambios a bases operativas ni habilitación general del agente/pagos.
 
 Evidencia cifrada y resumen privados en work/openai-live-request-2, ignorados en Git/ZIP. La prueba acredita acceso a la clave/modelo y el caso positivo de G5, no calidad general para lenguaje libre ni pruebas adversas con modelo real. Esos límites siguen cubiertos estructuralmente con la suite de 332 pruebas previa. No se modificó código ni se ejecutó otra suite por esta prueba operativa. PEY-001/002 continúan abiertos. Frontend/G6 no iniciado. Informe sanitizado actualizado en outputs.
+
+## Ejecución G6 — frontend local (2026-11-07)
+
+Autorización: «si hagamoslo» tras proponer frontend mínimo. Implementadas vistas Comprar/Comercio/Simulador, revisión de propuesta, aprobación separada de solicitud, espera/consulta, resultado basado en backend y auditoría sanitizada. Diseño adaptable, precio visible en tarjeta principal móvil y resumen lateral escritorio. Sin métodos QR/Link comerciales ni switch real. Intérprete fixture etiquetado y pagos mock; no se leen claves OpenAI/pey.
+
+Backend: BFF de rutas/roles permitidos, sesión aleatoria HttpOnly/SameSite, CSRF, Host/Origin local exactos y CSP/no-store; credenciales de comprador/comercio/operador solo en memoria. Nuevo endpoint de preparación con propiedad, PAID + READY_FOR_PREPARATION + evidencia de intento/transacción, auditoría/idempotencia atómicas. Estado/incertidumbre del cobro nunca se reemplazan por temporizador ni reenvío automático.
+
+Comandos observados: pnpm typecheck salida 0; node --check del cliente aprobado; suite completa **346/346 en 16 archivos**, 28.39 s. 14 pruebas nuevas cubren sesión, credenciales no expuestas, CSRF/origen/Host, proxies/perfiles bloqueados, aprobación/solicitud/confirmación distintas, polling, preparación e idempotencia/excepción. Sin nuevas dependencias ni migraciones. Primera suite focalizada: 9 aprobadas/5 fallidas por regex de fixture con límite de palabra ASCII tras café acentuado; corregida a límites Unicode, focalizada 14/14 y suite completa aprobadas.
+
+Prueba en navegador local: propuesta café $850 → consentimiento/aprobación → solicitud pendiente → simulador explícito → pago confirmado por backend → una notificación de comercio → PREPARING. Recarga/reinicio conserva compra y permite otra sin borrar registros del comercio. QA 390×844 y 1360×1000; ancho de contenido igual al viewport, sin scroll horizontal. Capturas sanitizadas Compra/Comercio/Móvil en outputs. Se restableció el tamaño del navegador y se dejó la demo abierta para el usuario.
+
+Runtime propio work/web-runtime, DB privada separada de operaciones bancarias/receptor, migraciones al iniciar sin reset. Servidor loopback 3002 activo por autorización G6; launcher web:up reutilizó la URL sin otro servidor. Incidencia operativa: señal de parada inicial restringida por permisos; reinicio del proceso propio permitido por revisión de aprobación. No se alteró el túnel/receptor pey. Helper Abrir-AgentPay.command preparado.
+
+Cero nuevas llamadas a OpenAI/pey, cero dinero real, sin publicación externa. G6 aprobado para demo local, no producción ni operación real desde navegador. PEY-001/002 siguen guardados. G7 no iniciado. Código/guías y ZIP sin configuración privada; commit local, sin push remoto.

@@ -755,3 +755,7 @@ G5 implementado: extracción OpenAI con salida estructurada, grounding determini
 ## G5: caso positivo real verificado — 2026-11-07
 
 Tras corregir saldo y autorizar un nuevo intento, una llamada a gpt-5.4-mini produjo propuesta válida de catálogo demo: 2 kg café, máximo $1,000, oferta $850. Política/grounding y replay sin otra llamada verificados. Ninguna orden aprobada, consentimiento o pago; DB temporal. No habilita llamadas ilimitadas ni G6. PEY-001/002 siguen abiertos y la evaluación general del modelo sigue acotada a esta evidencia.
+
+## G6 — Interfaz mínima verificada (2026-11-07)
+
+Frontend local adaptable implementado y probado con perfil fixture/mock: pedido, propuesta revisable, aprobación, solicitud pendiente, confirmación del simulador, resultado, comercio/preparación y auditoría. Backend BFF mantiene credenciales fuera del navegador y bloquea perfiles reales/producción. 346 pruebas, typecheck y recorrido móvil/escritorio aprobados. No se enviaron llamadas OpenAI ni cobros reales en G6. PEY-001/002 persisten; G7 no iniciado. Entrada pnpm web:up, guía docs/g6-frontend.md.

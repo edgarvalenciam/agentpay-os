@@ -121,3 +121,13 @@ La IA solo extrae fragmentos exactos bajo un esquema estructurado; no decide pre
 ## ADR-018 — Ejecución de agente persistente y proveedor apagado
 
 AgentRun (migración 007) registra comprador/clave/hash y PROCESSING antes de una invocación externa. Proveedor fuera de transacción DB; resultado o error se guarda para replay sin coste adicional. Reinicio interrumpido exige revisión y no reejecuta. Intención y propuesta usan idempotencia existente con claves derivadas. El intérprete Responses es configurable, store=false, sin reintentos ni acciones; por defecto no hay ruta activa. Modelo/clave reales y su prueba deben autorizarse separadamente; código verificado con fixtures no acredita calidad del modelo ni disponibilidad del servicio.
+
+## ADR-019 — Frontend local con BFF y proveedor ficticio
+
+La UI G6 es HTML/CSS/JS propio y el BFF Fastify del paquete API; no se agregan frameworks/dependencias. El servidor llama a la API mediante inject y conserva credenciales en memoria. Solo escucha loopback y verifica Host/Origin, sesión HttpOnly/SameSite, CSRF y rutas/roles permitidos. Rechaza backend real, intérprete OpenAI o producción: la autorización G6 no permite llamadas pagadas ni cobros adicionales. Roles son una demo del dueño local, no autenticación multicliente de producción.
+
+El navegador conserva claves idempotentes y estado revisable en sessionStorage, sin secretos, y relee estado financiero desde backend. Un temporizador solo hace GET. Aprobar pedido, solicitar CoDi y confirmar el simulador son acciones distintas; la UI no reenvía una solicitud incierta automáticamente ni da por pagado un pedido por redirect.
+
+## ADR-020 — Inicio de preparación autenticado
+
+POST /v1/orders/:id/preparation solo permite comercio dueño, estado PAID/READY_FOR_PREPARATION y un intento CONFIRMED con transacción PAID. Transición PREPARING y auditoría atómicas, idempotencia por actor/ruta/clave. Una excepción de cumplimiento no se puede preparar. No implementar entrega física o devolución por inferencia del estado financiero.

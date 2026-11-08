@@ -92,3 +92,9 @@ POST /v1/orders/:id/reconcile mantiene cuerpo vacío y autenticación comprador/
 Ruta opcional habilitada solo al configurar el intérprete. Bearer comprador e Idempotency-Key obligatorios. Cuerpo estricto `{ "text": "Compra 2 kg de café por máximo $1,000 mañana", "timezone": "America/Mexico_City" }`. Identidad desde token; hora desde servidor. No acepta aprobaciones ni datos de pago.
 
 200 PROPOSED: proposalId, snapshotHash y resumen revisable, requiresBuyerApproval=true, paymentsInitiated=false, agentProvider. 200 NEEDS_CLARIFICATION: missingFields/questions sin intención/reserva. 200 NO_ELIGIBLE_OFFER: intención y motivos del core, sin orden. 409 en clave/cuerpo conflictivo o ejecución en curso/interrumpida; 422 negativa del modelo; 503 salida inválida, inventada o proveedor no disponible. Respuestas fallidas finales también se repiten idempotentemente, sin otro costo del modelo. Aprobar por POST /v1/orders es un paso humano separado.
+
+## G6 — Preparación y BFF local
+
+POST /v1/orders/:id/preparation requiere comercio propietario, Idempotency-Key y cuerpo vacío. Devuelve orden/fulfillmentStatus PREPARING solo después de pago confirmado y disponibilidad conciliada. Comprador: 403; recurso ajeno: 404; no pagado/no listo/excepción: 409 CONFIRMED_PAYMENT_REQUIRED. Replay no crea otra auditoría.
+
+BFF /ui-api expone sesión/rol de demo, propuesta, aprobación, pagos/consulta/registro, comercio y confirmación mock desde operador. Requiere cookie y CSRF para escritura, Host/Origin local exactos, rol correspondiente y rutas fijas. No acepta destinos arbitrarios ni revela Bearer/operator tokens. Perfil simulado solamente; no apto para despliegue público. Ver docs/g6-frontend.md.

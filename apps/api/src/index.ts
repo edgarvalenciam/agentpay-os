@@ -60,6 +60,7 @@ export function buildApp(options:{db:UnitOfWork;credentials:Credential[];clock?:
   app.post('/v1/offers/:id/evaluate',async req=>service.evaluate(actor(req),EvaluateSchema.parse(req.body).intentId,params(req)));
   app.post('/v1/orders',async(req,reply)=>{const r=await service.createOrder(actor(req),key(req),CreateOrderSchema.parse(req.body));return reply.code(r.status).send(r.body);});
   app.get('/v1/orders/:id',async req=>service.getOrder(actor(req),params(req)));
+  app.post('/v1/orders/:id/preparation',async(req,reply)=>{z.object({}).strict().parse(req.body);const r=await service.startPreparation(actor(req),params(req),key(req));return reply.code(r.status).send(r.body);});
   app.get('/v1/orders/:id/events',async req=>service.getEvents(actor(req),params(req)));
   app.get('/v1/merchants/:id/orders',async req=>service.merchantOrders(actor(req),params(req)));
   if(mock){

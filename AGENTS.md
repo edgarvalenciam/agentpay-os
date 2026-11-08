@@ -115,3 +115,13 @@ El usuario indicó «guardemos estos 2 pendientes y sigamos con la siguiente eta
 ## Evidencia positiva G5 con modelo real — 2026-11-07
 
 Tras autorización de reintento y saldo corregido, una llamada OpenAI real produjo una propuesta de catálogo ficticio por $850 para 2 kg café con máximo $1,000. Replay sin nueva llamada, sin aprobación/consentimiento/pagos. Se valida el caso positivo, no todas las redacciones ni evaluaciones adversas con modelo real. Mantener proveedor apagado por defecto; no ejecutar más llamadas pagadas, cobros ni iniciar G6 sin nueva instrucción.
+
+## Autorización y estado G6 — 2026-11-07
+
+El usuario indicó «si hagamoslo» tras proponer frontend mínimo. Autoriza G6, superando la restricción histórica de no iniciarlo. Implementar/probar una UI local con fixtures no autoriza nuevas llamadas pagadas OpenAI, cobros reales, publicación ni G7.
+
+- UI local con BFF y perfiles fixture/mock únicamente. Tokens de comprador/comercio/operador permanecen en servidor; navegador no debe conocer claves ni usar pey directamente.
+- Mantener aprobación de orden y solicitud CoDi como acciones separadas y explícitas. Nunca fabricar PAID por temporizador, envío HTTP o caché del navegador.
+- El simulador solo genera eventos ficticios desde su vista de operador; no ofrecer funciones comerciales QR/links sin adaptador.
+- Preparación exige propiedad del comercio y evidencia de pago confirmado, stock/reserva conciliados; excepción tardía no autoriza preparación.
+- UI no resuelve PEY-001/002. Mantener pendiente la habilitación comercial real. Ver docs/g6-frontend.md.

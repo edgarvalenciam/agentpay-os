@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
-import { PurchaseIntentSchema, OfferSchema, MerchantSchema, MerchantPaymentAccountSchema, OrderSnapshotSchema, createSnapshot, evaluateOffer, fingerprint, recordConsent, transitionOrder, ConsentRecordSchema, canRequestPayment, type EvaluationContext, type OrderSnapshot, type PurchaseIntent } from '@agentpay/core';
+import { PurchaseIntentSchema, OfferSchema, MerchantSchema, MerchantPaymentAccountSchema, OrderSnapshotSchema, createSnapshot, evaluateOffer, fingerprint, recordConsent, transitionOrder, ConsentRecordSchema, canRequestPayment, type EvaluationContext, type OrderSnapshot, type PurchaseIntent, transitionFulfillment,type FulfillmentStatus } from '@agentpay/core';
 import type { UnitOfWork, Tx } from '@agentpay/database';
 import { CreateIntentSchema, ProposeSchema, CreateOrderSchema } from '@agentpay/contracts';
 export type Actor = {role:'BUYER';id:string} | {role:'MERCHANT';id:string};
@@ -113,7 +113,19 @@ export class CommerceService {
   }
   getOrder(actor:Actor,id:string){return this.db.read(async tx=>{const order=await this.ownedOrder(tx,id,actor);return {id:order.id,status:order.status,snapshotHash:order.snapshot!.hash,snapshot:summary(OrderSnapshotSchema.parse(JSON.parse(order.snapshot!.data)))};});}
   getEvents(actor:Actor,id:string){return this.db.read(async tx=>{await this.ownedOrder(tx,id,actor);const events=await tx.auditEvent.findMany({where:{orderId:id},orderBy:[{createdAt:'asc'},{id:'asc'}],take:100});return events.map(e=>({id:e.id,type:e.type,data:JSON.parse(e.data),createdAt:e.createdAt}));});}
-  merchantOrders(actor:Actor,merchantId:string){if(actor.role!=='MERCHANT'||actor.id!==merchantId)throw new ApiError(403,'MERCHANT_REQUIRED');return this.db.read(async tx=>(await tx.order.findMany({where:{merchantId},select:{id:true,status:true,fulfillmentStatus:true,createdAt:true,snapshot:{select:{data:true}}},take:100,orderBy:{createdAt:'desc'}})).map(row=>{const simulated=row.snapshot&&OrderSnapshotSchema.parse(JSON.parse(row.snapshot.data)).account.provider==='mock';return {id:row.id,status:row.status,fulfillmentStatus:row.fulfillmentStatus,createdAt:row.createdAt,environment:simulated?'mock':'real',label:simulated?'SIMULADO':'REAL'};}));}
+  merchantOrders(actor:Actor,merchantId:string){if(actor.role!=='MERCHANT'||actor.id!==merchantId)throw new ApiError(403,'MERCHANT_REQUIRED');return this.db.read(async tx=>(await tx.order.findMany({where:{merchantId},select:{id:true,status:true,fulfillmentStatus:true,createdAt:true,snapshot:{select:{data:true}}},take:100,orderBy:{createdAt:'desc'}})).map(row=>{const snapshot=row.snapshot?OrderSnapshotSchema.parse(JSON.parse(row.snapshot.data)):null;const simulated=snapshot?.account.provider==='mock';return {id:row.id,status:row.status,fulfillmentStatus:row.fulfillmentStatus,createdAt:row.createdAt,...(snapshot?{productId:snapshot.offer.productId,quantity:snapshot.offer.quantity,unit:snapshot.offer.unit,amountMinor:snapshot.offer.amountMinor,currency:snapshot.offer.currency}:{}),environment:simulated?'mock':'real',label:simulated?'SIMULADO':'REAL'};}));}
+  startPreparation(actor:Actor,orderId:string,key:string){
+    if(actor.role!=='MERCHANT')throw new ApiError(403,'MERCHANT_REQUIRED');
+    return this.mutate(actor,`POST /v1/orders/${orderId}/preparation`,key,{},async(tx,now)=>{
+      const order=await this.ownedOrder(tx,orderId,actor);
+      const paid=await tx.paymentAttempt.findFirst({where:{orderId,status:'CONFIRMED',resources:{some:{transactions:{some:{status:'PAID'}}}}}});
+      if(order.status!=='PAID'||order.fulfillmentStatus!=='READY_FOR_PREPARATION'||!paid)throw new ApiError(409,'CONFIRMED_PAYMENT_REQUIRED');
+      const fulfillmentStatus=transitionFulfillment(order.fulfillmentStatus as FulfillmentStatus,'PREPARING','CONFIRMED');
+      await tx.order.update({where:{id:orderId},data:{fulfillmentStatus}});
+      await tx.auditEvent.create({data:{id:randomUUID(),orderId,actorId:actor.id,type:'MERCHANT_PREPARATION_STARTED',data:JSON.stringify({fulfillmentStatus}),createdAt:new Date(now)}});
+      return {status:200,body:{id:orderId,status:order.status,fulfillmentStatus}};
+    });
+  }
   /** Must be called inside the payment admission transaction with a trusted buyer identity. */
   async revalidateForPayment(tx:Tx,orderId:string,buyerId:string,now:string,hash:string,provider:'mock'|'pey'='mock'){
     const row=await tx.order.findFirst({where:{id:orderId,buyerId},include:{snapshot:true,consent:true}});
