@@ -56,3 +56,9 @@ Se consultó el OpenAPI 2026-10-20 completo (11 operaciones), las cuatro familia
 ## Preparación de URL — 2026-11-07
 
 Usuario reporta cuenta receptora ACTIVE y teléfono con CoDi. No se han consultado con credenciales reales. Receptor dedicado HTTPS operativo; secreto de firma aún pendiente de configuración en el portal. Mientras falta, responde 503 y no guarda eventos. SDK Standard Webhooks verificado con fixtures; eso no constituye recepción de evento pey real. G0-R/G4-R pendientes de configuración completa y prueba bancaria autorizada con monto/beneficiario definidos.
+
+## Evidencia bancaria QR — 2026-11-07
+
+Una prueba QR de importe fijo $0.01 MXN hacia la cuenta pública de pruebas fue pagada por el usuario desde HSBC: API PAID, webhook firmado correlacionado por QR/transacción/metadata/referencia/importe y transacción visible en el historial receptor del portal. Demuestra el camino diagnóstico QR y la entrega real del webhook. No acredita CoDi Push ni integración de orden/stock/outbox del producto.
+
+Hallazgos operativos: apiKeyId recuperado del evento y corroborado en el portal, guardado privado. Cuenta creada en portal no consultable por GET /bank-account/:id (404 observado). metadata.clabe coincide con cuenta pagadora en esta prueba aunque la documentación describe receptora; retener discrepancia y no generalizar su semántica ni retirar validaciones hasta aclaración. No confundir esa discrepancia con ausencia de pago: PAID y destino en portal se verificaron por evidencias separadas.

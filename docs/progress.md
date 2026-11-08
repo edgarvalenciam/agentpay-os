@@ -9,7 +9,7 @@
 | 1 — Core (G1) | APROBADO | 47 tests; typecheck sin errores | Ninguno para G1 |
 | 2 — API/DB (G2) | APROBADO | 72 tests, typecheck, 3 migraciones y demo HTTP | Local, un proceso; sin pagos |
 | 3 — Mock/conciliación (G3) | APROBADO | 122 tests, typecheck, demo HTTP SIMULADO | No valida integración bancaria |
-| 4 — Pey real (G4) | Técnico implementado; G4-R pendiente | 195 tests; typecheck; demo contractual | IDs/nombre legal, consulta autenticada y prueba bancaria autorizada |
+| 4 — Pey real (G4) | QR diagnóstico pagado; CoDi Push comercial pendiente | API PAID + webhook firmado + portal receptor | Consulta de cuenta portal devuelve 404; discrepancia metadata.clabe; push sin recepción |
 | 5 — OpenAI (G5) | NO INICIADA | — | — |
 | 6 — Frontend (G6) | NO INICIADA | — | — |
 | 7 — E2E/demo (G7) | NO INICIADA | — | — |
@@ -134,3 +134,13 @@ Usuario confirma HSBC habilitado, opciones de pago/cobro visibles e historial va
 Usuario eligió explícitamente QR de un centavo MXN hacia la cuenta publicada de pruebas de Ramón. Se verificó en el portal que la clave mantiene seleccionada Cuenta Prueba Ramón, sin cambios. Implementado helper diagnóstico aislado scripts/pey-one-cent-qr.ts: importe fijo 0.01, expiration 900, generateImage=true, metadata identificable, registro privado O_EXCL sincronizado antes del POST y sin retries/redirecciones. No habilita el adaptador comercial QR ni frontend. Ocho pruebas nuevas y typecheck aprobados.
 
 Un único POST /codi/qr respondió 201 y recibo id/qrString validado. Imagen PNG de pey guardada en outputs/AgentPay-QR-prueba-001-MXN.png; evidencia privada en work/pey-one-cent-qr/state.json, excluida del repo/ZIP. Estado QR_CREATED_UNPAID; no confirma pago ni termina G4-R comercial. Revisión visual del PNG realizada. No se usó amount=0 ni se enviaron nuevos push. Enviar/mostrar QR no mueve dinero: el usuario autoriza en HSBC. QR puede admitir varios pagos; solicitar una sola autorización de un centavo. Fuentes: OpenAPI oficial 2026-10-20, consultada 2026-11-07.
+
+## Pago QR real confirmado — 2026-11-07
+
+Usuario informa haber pagado el QR autorizado de $0.01 MXN. La bandeja dedicada contiene un codi.qr.payment_received previamente verificado por Standard Webhooks y cifrado. Se descifró localmente, verificando hash, QR IDC, metadata única de la prueba, entorno real, referencia, importe y fecha. GET /transaction/:id autenticado devuelve PAID por un centavo MXN, CODI/API_CODI_QR, con la misma transacción y metadata, sin fees/tips/applicationFee. La revisión del historial de Cuenta Prueba Ramón en el portal muestra esa misma transacción pagada por un centavo. Confirmación bancaria del diagnóstico QR, no de una orden comercial.
+
+Se recuperó apiKeyId del webhook y se corroboró con el ID receptor API_KEY de la transacción en portal. Guardado solo en configuración privada 0600, sin mostrar el identificador ni secretos. El bankAccountId de la cuenta se obtuvo de la URL visible del portal; una consulta autenticada GET /bank-account/:id devolvió 404. No se guardó como configuración operativa, no se registró otra cuenta y no se reintentaron cobros.
+
+Discrepancia importante: metadata.clabe coincide con la cuenta HSBC del usuario (pagador), mientras que la documentación la describe como receptora. Por eso el chequeo inicial estricto de beneficiario resultó false. No se omitió silenciosamente: se corroboró por separado el receptor mediante el historial de la cuenta de Ramón y la transacción exacta, y se retuvo evidencia privada. No concluir todavía que todos los flujos devuelven la CLABE pagadora ni eliminar controles de conciliación de Push. Pendiente aclarar con pey y agregar contrato confirmado antes de adaptar ese servicio.
+
+El evento QR permanece en la bandeja de evidencia, no aplicado como pago de una orden ni consumiendo inventario. G4-R comercial/Push sigue pendiente: las pruebas Push anteriores no están confirmadas y el adaptador comercial QR 1:N no está implementado. No se generaron cobros nuevos durante la verificación; mock/off conservados. Evidencia privada y cifrada en work/pey-one-cent-qr; informe sanitizado en outputs. Cambio de documentación, sin modificaciones de código ni nuevas pruebas automatizadas.

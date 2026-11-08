@@ -733,3 +733,7 @@ Receptor dedicado y túnel HTTPS temporal preparados por solicitud del usuario. 
 ## Implementación técnica G4 — 2026-11-07
 
 Adaptador CoDi Push protegido, consulta de cuenta/transacción, procesador de webhook cifrado y conciliación implementados. 195 pruebas y typecheck aprobados; demo contractual sin banco. G4-R permanece pendiente: faltan IDs/nombre legal, validación autenticada y acuerdo concreto de monto/beneficiario. No se realizaron llamadas autenticadas reales ni cobros. Ver docs/g4-pey-integration.md.
+
+## Evidencia real posterior: QR pagado — 2026-11-07
+
+Un centavo MXN pagado desde HSBC, con API PAID, evento Standard Webhooks válido y transacción coincidente en historial receptor de Ramón. apiKeyId recuperado de forma privada. Se mantiene pendiente G4-R comercial/Push, consulta de cuenta compatible con API (404 en cuenta del portal) y aclaración de metadata.clabe, que en esta prueba coincide con pagador y no con receptor documentado. No se incorporó todavía el adaptador QR comercial ni frontend.
