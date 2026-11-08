@@ -16,4 +16,4 @@
 
 ## Estado de implementación
 
-Contrato de intérprete OpenAI, grounding determinista, capacidades reducidas y endpoint autenticado con AgentRun/idempotencia implementados. Criterios anteriores verificados con respuestas ficticias; no se declara todavía evaluación con modelo real aprobada. Pendiente configurar una clave/modelo OpenAI y autorizar una prueba acotada. Sin frontend ni herramientas de cobro. Ver docs/g5-shopping-agent.md y docs/pey-pendientes.md.
+Contrato de intérprete OpenAI, grounding determinista, capacidades reducidas y endpoint autenticado con AgentRun/idempotencia implementados. Criterios anteriores verificados con respuestas ficticias; se validó además un caso positivo con gpt-5.4-mini real tras autorización. Pendiente ampliar evaluación lingüística/adversa con modelo real; el alcance inicial no equivale a comprensión libre de cualquier pedido. Sin frontend ni herramientas de cobro. Ver docs/g5-shopping-agent.md y docs/pey-pendientes.md.

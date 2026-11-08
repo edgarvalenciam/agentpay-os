@@ -10,7 +10,7 @@
 | 2 — API/DB (G2) | APROBADO | 72 tests, typecheck, 3 migraciones y demo HTTP | Local, un proceso; sin pagos |
 | 3 — Mock/conciliación (G3) | APROBADO | 122 tests, typecheck, demo HTTP SIMULADO | No valida integración bancaria |
 | 4 — Pey real (G4) | Diagnósticos bancarios QR y Push pagados; integración comercial pendiente | Ambos API PAID + webhooks firmados; evidencia bancaria | Cuenta portal no consultable (404); discrepancia metadata.clabe; no E2E comercial real |
-| 5 — OpenAI (G5) | Código implementado; validación con modelo real pendiente | 76 tests nuevos, suite 332/332, demo ficticia | Clave/modelo guardados; prueba real rechazada por saldo API agotado (429) |
+| 5 — OpenAI (G5) | Código y caso positivo con modelo real verificados | 332 tests; Responses HTTP 200; propuesta y replay idempotente | Ampliar evaluaciones reales; catálogo local de demo |
 | 6 — Frontend (G6) | NO INICIADA | — | — |
 | 7 — E2E/demo (G7) | NO INICIADA | — | — |
 
@@ -198,3 +198,11 @@ Usuario autorizó «si» para una sola llamada al modelo configurado, con pedido
 Resultado observado: **una llamada real**, HTTP **429**, error.code **credit_balance_exhausted**, error.type insufficient_quota. OpenAI no generó interpretación ni propuesta. API local devolvió 503 sanitizado; repetir la misma petición interna devolvió exactamente la misma respuesta sin una segunda llamada externa. Contadores: órdenes aprobadas 0, consentimientos 0, intentos de pago 0, llamadas bancarias 0. DB temporal con migración 007 y datos ficticios eliminada al cerrar. No se modificaron DBs operativas ni banderas generales.
 
 Evidencia upstream cifrada y resumen privados en work/openai-live-one-request/, excluidos de Git/ZIP. No se publicó cuerpo de error, clave ni identificadores de organización. Bloqueo de G5 real identificado: saldo de API agotado; resolver en Billing de la organización correcta antes de autorizar otra prueba. No se infiere acceso/modelo plenamente validado a partir de un error de cuota. No hubo cambios de código ni nuevas pruebas automatizadas: solo prueba operativa autorizada y documentación. Fuente contrastada: guía oficial de errores OpenAI, credit_balance_exhausted identifica saldo prepago agotado y reintentar no restaura acceso.
+
+## Reintento OpenAI autorizado tras saldo — 2026-11-07
+
+Usuario indicó «listo intentalo», autorizando un nuevo intento acotado. Se conservó el marcador del intento anterior (429) y se creó uno exclusivo para esta autorización. Misma clave privada/modelo acordado, pedido ficticio, esquema estricto, store=false, sin herramientas y máximo 1,000 tokens de salida. Una llamada externa, sin reintentos automáticos.
+
+Resultado observado: **OpenAI HTTP 200, API comercial HTTP 200, status PROPOSED**. Pedido de 2 kg de café por máximo $1,000 para mañana interpretado y verificado contra el texto y el catálogo demo; propuesta $850 MXN, requiresBuyerApproval=true. Replay interno idempotente idéntico, sin segunda llamada al modelo. Órdenes aprobadas 0, consentimientos 0, intentos de pago 0, llamadas bancarias 0. DB temporal migrada y eliminada tras verificación; no cambios a bases operativas ni habilitación general del agente/pagos.
+
+Evidencia cifrada y resumen privados en work/openai-live-request-2, ignorados en Git/ZIP. La prueba acredita acceso a la clave/modelo y el caso positivo de G5, no calidad general para lenguaje libre ni pruebas adversas con modelo real. Esos límites siguen cubiertos estructuralmente con la suite de 332 pruebas previa. No se modificó código ni se ejecutó otra suite por esta prueba operativa. PEY-001/002 continúan abiertos. Frontend/G6 no iniciado. Informe sanitizado actualizado en outputs.

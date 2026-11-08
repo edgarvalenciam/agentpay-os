@@ -1,6 +1,6 @@
 # AgentPay OS — Codex Starter v1.2
 
-**Estado:** G1–G3 implementados y G5 preparado con fixtures: core, API local, persistencia SQLite/Prisma, reservas, consentimiento y auditoría. 332 pruebas y TypeScript estricto aprobados. Adaptador pey y conciliación comercial probados con fixtures; pruebas bancarias aisladas QR/Push pagadas. Habilitación comercial real pendiente. Sin frontend. Fecha: 2026-11-07.
+**Estado:** G1–G3 implementados y G5 verificado con fixtures y un caso real: core, API local, persistencia SQLite/Prisma, reservas, consentimiento y auditoría. 332 pruebas y TypeScript estricto aprobados. Adaptador pey y conciliación comercial probados con fixtures; pruebas bancarias aisladas QR/Push pagadas. Habilitación comercial real pendiente. Sin frontend. Fecha: 2026-11-07.
 
 ## Objetivo
 
@@ -12,7 +12,7 @@ Infraestructura B2B2C para comercio iniciado por IA, validado por políticas det
 2. Ejecuta `pnpm demo:agent` para la propuesta de compra con respuesta ficticia de modelo; no requiere claves.
 3. `pnpm demo` demuestra API y persistencia sin banco ni frontend.
 4. El prompt `prompts/START_CODEX.md` corresponde al arranque histórico de G1; no es la tarea siguiente.
-5. Siguiente paso: configurar y autorizar una prueba de modelo OpenAI real para G5. Los pendientes bancarios de G4 quedan separados en docs/pey-pendientes.md. No activar pagos reales ni producción desde este paquete.
+5. Un caso positivo de G5 ya se validó con modelo OpenAI real; el siguiente trabajo requiere nueva instrucción. Los pendientes bancarios de G4 quedan separados en docs/pey-pendientes.md. No activar pagos reales ni producción desde este paquete.
 
 ## Archivos
 
@@ -93,4 +93,4 @@ Receptor dedicado con SDK Standard Webhooks y almacenamiento cifrado; sin accion
 
 `pnpm demo:agent` demuestra la petición «2 kg de café por máximo $1,000 mañana» hasta una propuesta de $850 pendiente de aprobación. Validación independiente del modelo, políticas, fechas locales, idempotencia y reinicio cubiertos por pruebas. El texto no reconocido pide aclaración. No crea órdenes ni cobros.
 
-Conexión Responses preparada; calidad y acceso de un modelo real aún no evaluados. `pnpm agent:configure` guarda clave/modelo privados sin activarlos. AGENT_PROVIDER=disabled por defecto. Ver docs/g5-shopping-agent.md, tasks/05-openai.md y docs/pey-pendientes.md. Aplicar pnpm db:migrate a la DB comercial local antes de habilitar G5; la migración 007 se verificó en DBs temporales, no se aplicó a runtime operativo.
+Conexión Responses y un caso positivo con gpt-5.4-mini real verificados. Calidad lingüística general y casos adversos reales aún por evaluar. `pnpm agent:configure` guarda clave/modelo privados sin activarlos. AGENT_PROVIDER=disabled por defecto. Ver docs/g5-shopping-agent.md, tasks/05-openai.md y docs/pey-pendientes.md. Aplicar pnpm db:migrate a la DB comercial local antes de habilitar G5; la migración 007 se verificó en DBs temporales, no se aplicó a runtime operativo.

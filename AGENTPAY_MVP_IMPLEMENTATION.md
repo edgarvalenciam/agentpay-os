@@ -751,3 +751,7 @@ Se incorporó descubrimiento paginado autenticado para recuperar transactionId p
 PEY-001 (cuenta del portal no consultable por API) y PEY-002 (metadata.clabe observada como origen frente a receptor documentado) se guardan en docs/pey-pendientes.md. No se reinterpretan los pagos confirmados ni se retiran controles de G4.
 
 G5 implementado: extracción OpenAI con salida estructurada, grounding determinista, catálogo/ofertas/propuestas sin autoridad de pago, calendario local y aclaraciones, AgentRun/idempotencia y migración 007. 332 pruebas, typecheck y demo HTTP ficticia aprobados. Gramática inicial acotada: condiciones no soportadas requieren aclaración. Validación con modelo real pendiente de clave/modelo y prueba autorizada. AGENT_PROVIDER apagado por defecto, sin frontend/G6 ni nuevos cobros. Ver docs/g5-shopping-agent.md.
+
+## G5: caso positivo real verificado — 2026-11-07
+
+Tras corregir saldo y autorizar un nuevo intento, una llamada a gpt-5.4-mini produjo propuesta válida de catálogo demo: 2 kg café, máximo $1,000, oferta $850. Política/grounding y replay sin otra llamada verificados. Ninguna orden aprobada, consentimiento o pago; DB temporal. No habilita llamadas ilimitadas ni G6. PEY-001/002 siguen abiertos y la evaluación general del modelo sigue acotada a esta evidencia.

@@ -111,3 +111,7 @@ El usuario indicó «guardemos estos 2 pendientes y sigamos con la siguiente eta
 - OpenAI desactivado de fábrica. Las pruebas y demos usan fixtures; guardar una clave no autoriza gastar tokens ni activar el proveedor.
 - No usar credenciales reales ni realizar llamadas a OpenAI o nuevos cobros sin autorización específica. No iniciar frontend/G6 sin nueva instrucción.
 - Validación con modelo real pendiente, distinta de aprobación de código G5. Ver docs/g5-shopping-agent.md.
+
+## Evidencia positiva G5 con modelo real — 2026-11-07
+
+Tras autorización de reintento y saldo corregido, una llamada OpenAI real produjo una propuesta de catálogo ficticio por $850 para 2 kg café con máximo $1,000. Replay sin nueva llamada, sin aprobación/consentimiento/pagos. Se valida el caso positivo, no todas las redacciones ni evaluaciones adversas con modelo real. Mantener proveedor apagado por defecto; no ejecutar más llamadas pagadas, cobros ni iniciar G6 sin nueva instrucción.

@@ -1,6 +1,6 @@
 # Fase 5 — Interpretación y propuesta de compra (v1.2)
 
-Implementación preparada para Responses API de OpenAI con Structured Outputs; pruebas reproducibles con transporte ficticio. La calidad y el acceso con un modelo real todavía no se han validado. No se usaron claves reales de OpenAI ni se enviaron nuevos cobros. Los pendientes de pey están registrados separadamente en docs/pey-pendientes.md y no se consideran resueltos.
+Implementación preparada para Responses API de OpenAI con Structured Outputs; pruebas reproducibles con transporte ficticio. El acceso y un caso positivo con modelo real ya se validaron en una prueba acotada autorizada posterior; la calidad general sigue pendiente de evaluación. No se enviaron nuevos cobros. Los pendientes de pey están registrados separadamente en docs/pey-pendientes.md y no se consideran resueltos.
 
 ## Recorrido
 
@@ -59,3 +59,7 @@ Fuentes oficiales consultadas: https://developers.openai.com/api/docs/guides/str
 ## Primera prueba autorizada con modelo real
 
 Se realizó una sola llamada de prueba con clave/modelo configurados. OpenAI devolvió 429 credit_balance_exhausted; la interpretación real no pudo validarse por saldo de API agotado. Replay local idempotente sin otra llamada. No hubo orden ni pago. Cargar saldo o disponer de créditos en la organización de esa clave es una acción del usuario; después se requiere una nueva prueba acotada autorizada, sin eliminar el registro del intento previo.
+
+## Prueba real posterior con saldo disponible
+
+El usuario autorizó un segundo intento, independiente del primero. Una llamada a gpt-5.4-mini terminó HTTP 200; el servicio generó PROPOSED para 2 kg café, presupuesto $1,000 y oferta de catálogo demo $850. Grounding, política y propuesta funcionaron con la respuesta real. Replay interno devolvió exactamente lo mismo sin otra llamada. No se aprobó orden, registró consentimiento ni inició pago. Catálogo/DB temporales, no compra real. Ampliar evaluación con más redacciones y casos adversos requiere autorización específica; no se activó un servidor persistente ni G6.
