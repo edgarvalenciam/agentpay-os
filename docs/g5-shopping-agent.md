@@ -55,3 +55,7 @@ Estas pruebas verifican fronteras de código con respuestas ficticias; no equiva
 La demo crea DB temporal con migraciones, usa el adaptador Responses con transporte sustituido, envía la compra de café a la API local y verifica propuesta de $850 frente al máximo de $1,000, una reserva y un solo llamado ficticio al repetir. Cero órdenes aprobadas y cero pagos. No lee .env.pey.local ni .env.openai.local.
 
 Fuentes oficiales consultadas: https://developers.openai.com/api/docs/guides/structured-outputs?api-mode=responses y https://developers.openai.com/api/reference/resources/responses/methods/create. No se introdujeron SDKs o dependencias nuevas; adaptador REST con fetch y contratos manuales.
+
+## Primera prueba autorizada con modelo real
+
+Se realizó una sola llamada de prueba con clave/modelo configurados. OpenAI devolvió 429 credit_balance_exhausted; la interpretación real no pudo validarse por saldo de API agotado. Replay local idempotente sin otra llamada. No hubo orden ni pago. Cargar saldo o disponer de créditos en la organización de esa clave es una acción del usuario; después se requiere una nueva prueba acotada autorizada, sin eliminar el registro del intento previo.
