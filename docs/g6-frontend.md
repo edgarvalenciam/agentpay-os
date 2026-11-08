@@ -13,7 +13,8 @@ La demo utiliza una DB propia en work/web-runtime/commerce.db y aplica migracion
 1. Escribir el pedido o usar el ejemplo de 2 kg de café por máximo $1,000 mañana. El intérprete de la demo prepara fragmentos de forma local; la UI lo etiqueta como demo, no como inferencia OpenAI real. El servidor aplica el grounding y políticas de G5.
 2. Revisar la propuesta: producto, cantidad, importe total, comercio/beneficiario y entrega. El precio permanece en la tarjeta principal incluso en móvil, donde el resumen lateral se oculta.
 3. Marcar revisión y pulsar Aprobar pedido. Crea orden/consentimiento por la API existente; no solicita ni confirma pago.
-4. Dar consentimiento separado para solicitar CoDi simulado. La UI conserva una clave idempotente y bloquea otro envío. Ante error de red conserva incertidumbre: consultar estado en vez de fabricar PAID o reenviar automáticamente.
+   Cambiar pedido libera primero su reserva mediante la API; si no hay acuse, se conserva la propuesta y puede repetirse la liberación con la misma clave. No se permite liberar una propuesta ya aprobada.
+4. Dar consentimiento separado para solicitar CoDi simulado. La UI conserva una clave idempotente y bloquea otro envío. Ante error de red conserva incertidumbre: consultar estado en vez de fabricar PAID o reenviar automáticamente. Si aún no aparece un intento, Recuperar la misma solicitud permite recuperar explícitamente la operación original: primero GET y, solo si sigue ausente, POST con la misma clave/cuerpo. Un intento existente o incierto nunca provoca otro envío al proveedor.
 5. GET /payments consulta el estado. El temporizador solo lee; no confirma pagos. Consultar estado puede reconciliar mediante la API existente, sin crear otro cobro.
 6. En Simulador, el operador local genera una confirmación ficticia separada. El backend verifica el evento mock, concilia el pago, consume inventario y entrega la notificación local. Al volver a Comprar, la pantalla muestra el resultado del backend, incluyendo excepción de cumplimiento si corresponde.
 7. Preparar otra compra limpia solo el estado de pantalla, conservando pedidos y auditoría de la DB.
@@ -34,7 +35,7 @@ El BFF solo arranca con backend mock e intérprete fixture; rechaza perfil real/
 
 Roles Comprar/Comercio/Simulador son vistas explícitas de un operador de demo local. El cambio de rol está protegido por sesión/CSRF, pero no representa verificación de identidad multicliente de producción. Cada ruta comprueba el rol y la API revalida propiedad de recursos. Los controles mock no son accesibles por el proxy de comprador ni se entregan sus credenciales al navegador.
 
-El estado de compra y claves de operación se conservan en sessionStorage, sin secretos del proveedor ni tokens de autenticación. Puede incluir el texto introducido y resumen de propuesta; es almacenamiento local del navegador, no cifrado de datos en reposo. El estado financiero se recarga del backend y no se restaura como pago confirmado desde el almacenamiento del navegador.
+El estado de compra y claves de operación se conservan en sessionStorage, sin secretos del proveedor ni tokens de autenticación. Puede incluir el texto introducido y resumen de propuesta; es almacenamiento local del navegador, no cifrado de datos en reposo. El estado financiero se recarga del backend y no se restaura como pago confirmado desde el almacenamiento del navegador. Si el navegador bloquea sessionStorage o agota su cuota, la operación continúa en memoria y se indica mantener la pestaña abierta; no se promete recuperación tras cerrarla.
 
 ## Evidencia
 
@@ -43,3 +44,6 @@ Suite completa: 346/346 pruebas en 16 archivos, typecheck aprobado y node --chec
 Prueba real de navegador, solo con simulaciones: pedido de 2 kg café → propuesta $850 → revisión y aprobación → solicitud pendiente → confirmación del operador → pago conciliado → una notificación → preparación del comercio. Verificados recarga de página, reinicio del servidor, estado conservado y nueva compra sin borrar la anterior. Pantallas móvil 390×844 y escritorio 1360×1000 sin desbordamiento horizontal. Evidencias PNG en outputs; no contienen claves ni datos bancarios reales.
 
 Limitaciones: catálogo e intérprete local acotados; no chat libre con un modelo real desde la UI, producción o autenticación pública, proveedores reales ni entrega física. Fase 7 y habilitación bancaria comercial requieren trabajo/autorización posterior. Los diagnósticos bancarios previos permanecen separados del pedido simulado de la demo.
+
+
+Revisión posterior: 11 regresiones añadidas (seis de API/SQLite y cinco del cliente ante fallos de red/caché/almacenamiento). Informe actualizado: docs/revision-2026-11-07.md.

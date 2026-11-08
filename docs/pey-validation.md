@@ -1,6 +1,6 @@
 # Pey — Matriz de validación G0
 
-**Fecha:** 2026-11-07. **Estado:** documentación pública revisada. Ninguna llamada autenticada, cuenta operativa ni pago real se verificó en este paquete.
+**Fecha:** 2026-11-07. **Estado actual:** documentación pública revisada, diagnósticos bancarios QR/Push pagados con API PAID y webhooks firmados. Integración comercial real bloqueada por PEY-001/002. La matriz siguiente conserva el punto de partida G0; ver la evidencia posterior y el resumen actual al final.
 
 | Capacidad | Evidencia documental | Evidencia operativa | Pendiente |
 |---|---|---|---|
@@ -43,7 +43,7 @@
 
 **G0-D (documental): COMPLETO para los endpoints públicos conocidos.** Ver `docs/pey-capabilities.md` y `docs/pey-adapter-contracts.md`.
 
-**G0-R (operativo): BLOQUEADO / NO INICIADO.** Falta acceso al portal/credenciales, cuenta ACTIVE, teléfono CoDi, endpoint webhook y prueba real autorizada.
+**G0-R al inicio (histórico): BLOQUEADO / NO INICIADO.** Falta acceso al portal/credenciales, cuenta ACTIVE, teléfono CoDi, endpoint webhook y prueba real autorizada.
 
 Fuentes: enlaces oficiales listados en `docs/pey-capabilities.md`.
 
@@ -68,3 +68,17 @@ Hallazgos operativos: apiKeyId recuperado del evento y corroborado en el portal,
 Solicitud nueva tras vincular Cuenta Prueba Ramón: usuario recibió notificación HSBC y autorizó un centavo. Consulta autenticada PAID y webhook firmado correlacionados por transacción, metadata, referencia, importe/moneda y fecha. Captura bancaria confirma beneficiario Ramón y folio exacto. La prueba bancaria Push, además de QR, funcionó. No afirmar que el cambio de nombre/vínculo fue la causa demostrada de los fallos previos.
 
 Desviación de contrato observada: codiId del recibo y comprobante HSBC es hexadecimal de longitud 20; el texto OpenAPI dice 20 dígitos. Gateway y helper ahora permiten exactamente 20 caracteres hexadecimales, conservando los casos numéricos. Doce regresiones nuevas incluyen mayúsculas, otras letras, espacios y límites de longitud. Separar este hecho observado de la descripción documental. No generalizar otros formatos sin evidencia.
+
+
+## Resumen actual tras G6 — 2026-11-07
+
+| Capacidad | Observado | Pendiente |
+|---|---|---|
+| Push y QR diagnósticos | Solicitudes autorizadas, pagos de un centavo, API PAID y correlación de webhook firmado | E2E comercial real de orden/reserva/inventario/outbox |
+| Cuenta vinculada en portal | Recibió los pagos; consulta de su ID por API devuelve 404 | PEY-001: verificación programática compatible y autorizada |
+| Destinatario | Ramón recibió; usuario pagó desde HSBC, verificado por comprobante y portal | PEY-002: contrato para acreditar receptor; metadata.clabe observada como origen |
+| Transacciones | Consulta individual autenticada real y recuperación paginada probada con fixtures | Exhaustividad/estabilidad del listado bajo operación real concurrente |
+| Webhooks | Recepción real de codi.pn.payment_received y codi.qr.payment_received con firma válida | Otros dos eventos publicados y políticas operativas de reintentos sin verificar en vivo |
+| Payment Links / registro de cuentas por API | Documentados; sin implementación comercial ni pruebas reales | Contratos, permisos para terceros y habilitación por método |
+
+No se hicieron nuevas consultas externas en la revisión posterior a G6: este resumen consolida evidencias existentes, sin resolver por suposición los dos pendientes.

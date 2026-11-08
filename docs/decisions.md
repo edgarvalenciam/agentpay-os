@@ -131,3 +131,10 @@ El navegador conserva claves idempotentes y estado revisable en sessionStorage, 
 ## ADR-020 — Inicio de preparación autenticado
 
 POST /v1/orders/:id/preparation solo permite comercio dueño, estado PAID/READY_FOR_PREPARATION y un intento CONFIRMED con transacción PAID. Transición PREPARING y auditoría atómicas, idempotencia por actor/ruta/clave. Una excepción de cumplimiento no se puede preparar. No implementar entrega física o devolución por inferencia del estado financiero.
+
+
+## ADR-021 — Abandonar propuestas y recuperar la solicitud original
+
+Revisión autorizada por usuario (2026-11-07). Cambiar pedido libera la reserva mediante POST /v1/proposals/:id/release: actor comprador dueño, cuerpo vacío, idempotencia y transacción serializada con aprobación. No borra propuesta/snapshot ni puede cancelar una orden aprobada, intento o pago. Una propuesta liberada falla la revalidación; el replay del resultado histórico no reactiva su reserva.
+
+Una interrupción de red en el navegador conserva la incertidumbre y la clave de pago. La recuperación es manual: primero consulta y, solo si no existe intento, repite la operación interna con la misma clave/cuerpo. La API devuelve la aceptación persistida o bloquea un intento existente, incluyendo UNKNOWN. No se añade reintento de POST al proveedor ni nueva autorización financiera. Polling sigue siendo solo GET. Si falla sessionStorage, continuar en memoria con advertencia de mantener la pestaña abierta.

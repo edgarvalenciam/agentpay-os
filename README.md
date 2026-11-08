@@ -1,6 +1,6 @@
 # AgentPay OS — Codex Starter v1.2
 
-**Estado:** G1–G3 implementados, G5 verificado con fixtures y un caso real, y G6 con interfaz simulada local: core, API local, persistencia SQLite/Prisma, reservas, consentimiento y auditoría. 346 pruebas y TypeScript estricto aprobados. Adaptador pey y conciliación comercial probados con fixtures; pruebas bancarias aisladas QR/Push pagadas. Habilitación comercial real pendiente. Frontend local simulado, sin habilitación comercial real. Fecha: 2026-11-07.
+**Estado:** G1–G3 implementados, G5 verificado con fixtures y un caso real, y G6 con interfaz simulada local: core, API local, persistencia SQLite/Prisma, reservas, consentimiento y auditoría. 357 pruebas y TypeScript estricto aprobados. Adaptador pey y conciliación comercial probados con fixtures; pruebas bancarias aisladas QR/Push pagadas. Habilitación comercial real pendiente. Frontend local simulado, sin habilitación comercial real. Fecha: 2026-11-07.
 
 ## Objetivo
 
@@ -28,7 +28,7 @@ Infraestructura B2B2C para comercio iniciado por IA, validado por políticas det
 | `docs/changelog-v1.2.md` | Cambios comparados con v1.1 |
 | `tasks/00-pey-validation.md` | Validación externa, sin ejecutar cobros |
 | `tasks/01-core.md` | Única tarea de código autorizada inicialmente |
-| `tasks/02-*.md` a `tasks/07-*.md` | Siguientes fases, NO iniciar aún |
+| `tasks/02-*.md` a `tasks/07-*.md` | Checklist por fase; consultar estado actual antes de continuar |
 | `prompts/START_CODEX.md` | Prompt para Codex |
 | `.env.example` | Valores seguros sin secretos |
 
@@ -55,7 +55,7 @@ pnpm test
 pnpm typecheck
 ```
 
-El paquete `@agentpay/core` está en `packages/core/src`. Las pruebas usan fixtures ficticios y no requieren variables de entorno. Existe API local y adaptador financiero protegido, sin validación bancaria real. Ver `docs/architecture.md` y `docs/progress.md`.
+El paquete `@agentpay/core` está en `packages/core/src`. Las pruebas usan fixtures ficticios y no requieren variables de entorno. Existe API local y adaptador financiero protegido; los diagnósticos bancarios QR/Push fueron pagados, pero la integración comercial real sigue bloqueada por PEY-001/002. Ver `docs/architecture.md` y `docs/progress.md`.
 
 ## Fase 2 — API persistente
 
@@ -100,3 +100,8 @@ Conexión Responses y un caso positivo con gpt-5.4-mini real verificados. Calida
 `pnpm web:up` inicia o reutiliza http://127.0.0.1:3002 con las vistas Comprar, Comercio y Simulador. `pnpm web:dev` es la alternativa en primer plano. Sin claves OpenAI/pey, sin llamadas pagadas ni dinero real. El servidor aplica migraciones en una DB de demo propia sin resetear datos existentes.
 
 Prueba la compra, revisa importe/beneficiario, aprueba el pedido y solicita el CoDi ficticio. Confírmalo en Simulador y vuelve a consultar. Comercio muestra una notificación y permite preparar solo pedidos pagados y listos. No hay endpoints de proveedor ni tokens privados en el navegador. Ver docs/g6-frontend.md para alcance local, sesión, límites y pruebas.
+
+
+## Revisión de mejoras tras G6
+
+Cambiar pedido libera la reserva de la propuesta sin aprobar. Ante una interrupción de red, Recuperar la misma solicitud consulta primero y usa la clave original, sin duplicar envíos al proveedor. El navegador tolera almacenamiento bloqueado y siempre consulta al backend antes de mostrar un pago. Informe y pendientes en docs/revision-2026-11-07.md.

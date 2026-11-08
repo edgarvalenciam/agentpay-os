@@ -2,7 +2,7 @@
 
 **Versión:** 1.2 — inventario integral de API pey y plan de implementación (07-nov-2026)  
 **Fecha:** 2026-11-07  
-**Estado:** G1/G2/G3 implementados y verificados; G0-D revisado; G0-R y Fases 4–7 pendientes
+**Estado:** G1–G3 y G6 local verificados; G5 con fixtures y un caso real; G4 técnico y diagnósticos bancarios verificados, integración comercial real bloqueada por PEY-001/002; G7 pendiente
 **Objetivo:** Construir y demostrar una compra iniciada por IA, validada por políticas deterministas y pagada mediante CoDi Push a través de pey, con confirmación financiera verificable.
 
 > **Principio:** El agente propone; el core valida; el comprador solicita el cobro y autoriza en su banco; el proveedor financiero comunica el resultado; AgentPay concilia; el comercio cumple la orden.
@@ -59,13 +59,13 @@
 
 | Fase | Entregable | Estado | Gate |
 |---|---|---|---|
-| 0 | Factibilidad pey/CoDi y contratos | Documental verificado; operativo pendiente | G0-D / G0-R |
+| 0 | Factibilidad pey/CoDi y contratos | Documental y diagnósticos operativos verificados; alcance comercial pendiente | G0-D / G0-R |
 | 1 | Dominio y motor de políticas | Completo: 47 tests y typecheck | G1 |
 | 2 | API, persistencia y órdenes | Completo: API local, DB, reservas y auditoría | G2 |
 | 3 | Orquestación de pagos simulada y conciliación | Completo: mock, conciliación y outbox local | G3 |
-| 4 | Integración real pey/CoDi | Adaptador y conciliación con fixtures; banco pendiente | G4 |
-| 5 | Agente OpenAI | ☐ Pendiente | G5 |
-| 6 | Frontend comprador/comercio | ☐ Pendiente | G6 |
+| 4 | Integración real pey/CoDi | Adaptador/conciliación con fixtures; QR y Push diagnósticos pagados; PEY-001/002 abiertos | G4 técnico; comercial real pendiente |
+| 5 | Agente OpenAI | Fixtures y un caso real positivo; evaluación lingüística amplia pendiente | G5 acotado |
+| 6 | Frontend comprador/comercio | Demo local fixture/mock verificada; sin claves ni cobros reales | G6 local |
 | 7 | E2E, seguridad y demo | ☐ Pendiente | G7 |
 
 **Definición de éxito del prototipo (G7-D):** Una instrucción en lenguaje natural genera una propuesta válida; el usuario ve el detalle y solicita el cobro; el mock inicia una solicitud; el sistema valida una confirmación simulada y el comercio ve la orden pagada con distintivo inequívoco **SIMULADO**.
@@ -440,16 +440,16 @@ Lee docs/pey-validation.md y la Fase 4. Implementa el adaptador pey únicamente 
 
 ### Checklist
 
-- [ ] Implementar `IntentInterpreter` con salida estructurada y validación Zod.
-- [ ] Configurar herramientas del agente con schemas estrictos.
-- [ ] Limitar ofertas a resultados del catálogo; nunca inventar proveedor, precio o stock.
-- [ ] Pedir aclaración si falta una restricción esencial.
-- [ ] Manejar instrucciones maliciosas dentro de descripciones de productos.
-- [ ] Confirmar que la selección propuesta siempre pasa por Policy Engine.
-- [ ] Probar instrucciones ambiguas, cambios de presupuesto y ofertas incompatibles.
+- [x] Implementar `IntentInterpreter` con salida estructurada y validación Zod.
+- [x] Capacidades internas restringidas del orquestador y extracción con esquema estricto; el modelo no recibe function tools (ADR-017).
+- [x] Limitar ofertas a resultados del catálogo; nunca inventar proveedor, precio o stock.
+- [x] Pedir aclaración si falta una restricción esencial.
+- [x] Manejar instrucciones maliciosas dentro de descripciones de productos.
+- [x] Confirmar que la selección propuesta siempre pasa por Policy Engine.
+- [x] Probar instrucciones ambiguas, cambios de presupuesto y ofertas incompatibles.
 - [ ] Registrar versión de modelo, versión de prompt y decisión de política sin almacenar secretos.
 - [ ] Añadir prueba de **cambio de intención**: el agente propone una oferta válida, pero si comprador cambia presupuesto/producto antes de pagar, invalidar snapshot y exigir nueva autorización comercial.
-- [ ] No introducir dependencia obligatoria de OpenAI en la ejecución y conciliación: si el modelo falla, las órdenes pagadas siguen reconciliándose.
+- [x] No introducir dependencia obligatoria de OpenAI en la ejecución y conciliación: si el modelo falla, las órdenes pagadas siguen reconciliándose.
 
 ### Gate G5
 
@@ -469,20 +469,20 @@ Implementa SOLO Fase 5. Usa OpenAI para interpretar intención y consultar el ca
 
 ### Checklist
 
-- [ ] Implementar Next.js y Tailwind con diseño responsivo.
-- [ ] Pantalla 1: chat e intención.
-- [ ] Pantalla 2: oferta, condiciones y resultado de políticas.
-- [ ] Pantalla 3: resumen inmutable y acción “Enviar solicitud CoDi”.
-- [ ] Pantalla 4: espera bancaria con instrucciones y estado consultado al backend.
-- [ ] Pantalla 5: confirmación, pendiente, error o excepción; nunca éxito optimista.
-- [ ] Pantalla 6: órdenes del comercio y acción “Preparar”.
-- [ ] Pantalla 7: auditoría técnica simplificada para demo.
-- [ ] Mostrar distintivo visible **SIMULADO** cuando `PAYMENT_PROVIDER=mock` y **NO DISPONIBLE** si se intenta activar un proveedor sin credenciales correctas.
-- [ ] Mostrar en orden el beneficiario real que se verá en el banco, incluido si es cuenta de pruebas distinta al comercio.
+- [x] Diseño responsivo HTML/CSS/JS con BFF Fastify, alternativa local implementada según ADR-019; sin Next.js/Tailwind.
+- [x] Pantalla 1: chat e intención.
+- [x] Pantalla 2: oferta, condiciones y resultado de políticas.
+- [x] Pantalla 3: resumen inmutable y acción “Enviar solicitud CoDi”.
+- [x] Pantalla 4: espera simulada con instrucciones y estado consultado al backend; sin espera bancaria real desde UI.
+- [x] Pantalla 5: confirmación, pendiente, error o excepción; nunca éxito optimista.
+- [x] Pantalla 6: órdenes del comercio y acción “Preparar”.
+- [x] Pantalla 7: auditoría técnica simplificada para demo.
+- [x] Distintivo **SIMULADO** visible; BFF rechaza todo perfil real/no fixture y producción, sin interruptor de activación.
+- [x] Mostrar beneficiario del snapshot de demo. Beneficiario bancario real queda fuera del perfil G6 y bloqueado por PEY-001/002.
 - [ ] Mostrar errores separados: notificación posiblemente no recibida, pago no confirmado, problema de conciliación y excepción de cumplimiento.
 - [ ] Mantener TTL de la solicitud CoDi real; el reloj del cliente es informativo, nunca la fuente de verdad.
-- [ ] Manejar loading, doble clic, errores, reintentos seguros y recarga de página.
-- [ ] No almacenar credenciales de pey ni exponer datos sensibles.
+- [x] Manejar loading, doble clic, errores, reintentos seguros y recarga de página.
+- [x] No almacenar credenciales de pey ni exponer datos sensibles.
 
 ### Gate G6
 
@@ -759,3 +759,8 @@ Tras corregir saldo y autorizar un nuevo intento, una llamada a gpt-5.4-mini pro
 ## G6 — Interfaz mínima verificada (2026-11-07)
 
 Frontend local adaptable implementado y probado con perfil fixture/mock: pedido, propuesta revisable, aprobación, solicitud pendiente, confirmación del simulador, resultado, comercio/preparación y auditoría. Backend BFF mantiene credenciales fuera del navegador y bloquea perfiles reales/producción. 346 pruebas, typecheck y recorrido móvil/escritorio aprobados. No se enviaron llamadas OpenAI ni cobros reales en G6. PEY-001/002 persisten; G7 no iniciado. Entrada pnpm web:up, guía docs/g6-frontend.md.
+
+
+## Revisión posterior a G6 — 2026-11-07
+
+Roadmap sincronizado con evidencia de docs/progress.md. Mejoras sobre G6: liberación idempotente de reservas de propuestas sin aprobar, recuperación explícita de la operación de solicitud con la clave original, tolerancia a almacenamiento bloqueado y verificación estricta del perfil local. No habilita G7 ni pagos comerciales reales. Ver docs/revision-2026-11-07.md para alcance, pruebas y límites. Los checklists históricos y prompts de inicio no sustituyen el estado global actual.

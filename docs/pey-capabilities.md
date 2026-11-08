@@ -1,6 +1,6 @@
 # Pey — Inventario de capacidades API y webhooks
 
-**Versión de análisis:** 1.2 | **Fecha:** 2026-11-07 | **Estado:** revisión documental; no hay integración real probada.
+**Versión de análisis:** 1.2 | **Fecha:** 2026-11-07 | **Estado:** revisión documental y diagnósticos bancarios QR/Push pagados y verificados; integración comercial real pendiente de PEY-001/002.
 
 Fuente de referencia: https://docs.pey.mx/ y https://docs.pey.mx/docs/api/codi-api/ (versión de la API indicada en la referencia: 2026-10-20).
 

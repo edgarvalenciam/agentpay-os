@@ -10,7 +10,7 @@ export function buildWebApp(options:{api:FastifyInstance;origin:string;buyerToke
  const origin=new URL(options.origin);
  if(origin.protocol!=='http:'||origin.hostname!=='127.0.0.1'||origin.pathname!=='/'||origin.search||origin.hash||origin.username||origin.password||process.env.NODE_ENV==='production')throw new Error('LOCAL_DEMO_ORIGIN_REQUIRED');
  const app=Fastify({logger:false,disableRequestLogging:true,bodyLimit:16384}),sessions=new Map<string,Session>();
- app.addHook('onReady',async()=>{const health=(await options.api.inject({url:'/health'})).json();if(health.realPaymentsEnabled||!health.mockPaymentsEnabled||health.agentProvider!=='fixture')throw new Error('WEB_FIXTURE_PROFILE_REQUIRED');});
+ app.addHook('onReady',async()=>{const response=await options.api.inject({url:'/health'}),health=response.json();if(response.statusCode!==200||health.realPaymentsEnabled!==false||health.mockPaymentsEnabled!==true||health.agentProvider!=='fixture')throw new Error('WEB_FIXTURE_PROFILE_REQUIRED');});
  app.addHook('onRequest',async(req,reply)=>{
   reply.header('content-security-policy',"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'");
   reply.header('x-content-type-options','nosniff').header('referrer-policy','no-referrer').header('cache-control','no-store').header('x-frame-options','DENY');
@@ -29,13 +29,14 @@ export function buildWebApp(options:{api:FastifyInstance;origin:string;buyerToke
   return {csrf:value.csrf,role:value.role,environment:'mock',agentProvider:'fixture'};
  });
  app.addHook('preHandler',async(req,reply)=>{
-  if(!req.url.startsWith('/ui-api/')||req.url==='/ui-api/session')return;
+  if(!req.url.startsWith('/ui-api/')||req.routeOptions.url==='/ui-api/session')return;
   const s=session(req.headers.cookie);if(!s)return reply.code(401).send({error:{code:'DEMO_SESSION_REQUIRED'}});
   if(req.method!=='GET'&&req.headers['x-ui-csrf']!==s.csrf)return reply.code(403).send({error:{code:'CSRF_REQUIRED'}});
  });
  app.post('/ui-api/role',async(req,reply)=>{const role=(req.body as {role?:unknown}|undefined)?.role;if(!['BUYER','MERCHANT','OPERATOR'].includes(String(role)))return reply.code(400).send({error:{code:'INVALID_ROLE'}});const s=session(req.headers.cookie)!;s.role=role as Role;return {role:s.role};});
  const routes:[string,'GET'|'POST',Role,(params:Record<string,string>)=>string][]=[
   ['/ui-api/proposals','POST','BUYER',()=>'/v1/agent/proposals'],
+  ['/ui-api/proposals/:id/release','POST','BUYER',p=>`/v1/proposals/${encodeURIComponent(p.id!)}/release`],
   ['/ui-api/orders','POST','BUYER',()=>'/v1/orders'],
   ['/ui-api/orders/:id','GET','BUYER',p=>`/v1/orders/${encodeURIComponent(p.id!)}`],
   ['/ui-api/orders/:id/payment-requests','POST','BUYER',p=>`/v1/orders/${encodeURIComponent(p.id!)}/payment-requests`],

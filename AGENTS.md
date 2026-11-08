@@ -1,5 +1,15 @@
 # AGENTS.md — Reglas persistentes de AgentPay OS para Codex (v1.2)
 
+## Estado actual y alcance vigente — 2026-11-07
+
+G1–G3 completos; G4 técnico con fixtures y diagnósticos bancarios QR/Push pagados, pero operación comercial real bloqueada por PEY-001/002; G5 con fixtures y un caso real positivo; G6 local fixture/mock verificado. G7 no iniciado. Las restricciones de «primera sesión» de abajo son históricas y las autorizaciones posteriores indican qué fases se habilitaron.
+
+El usuario autoriza revisión y mejoras locales verificables. No inferir nuevas llamadas pagadas a OpenAI, cobros reales, cambios de cuentas bancarias, publicación ni cierre de G7. Mantener aislados receptor/túnel pey y demo comercial. Fuente actual de evidencias: docs/progress.md y docs/revision-2026-11-07.md.
+
+- Cambiar pedido debe liberar de forma autenticada/idempotente solo la reserva de una propuesta sin orden; no cancelar cobros, órdenes aprobadas ni evidencia.
+- Recuperación de solicitud desde UI: consultar estado y conservar la misma clave/cuerpo originales. Nunca reenviar al proveedor un intento ya registrado o incierto; el backend controla el replay.
+- La caché del navegador no acredita pago. Si sessionStorage falla, continuar en memoria e informar que debe mantenerse la pestaña abierta.
+
 ## Contexto, orden de lectura y prioridades
 
 1. Lee `AGENTPAY_MVP_IMPLEMENTATION.md` (v1.2), `docs/pey-capabilities.md`, `docs/pey-adapter-contracts.md` y `tasks/01-core.md`.

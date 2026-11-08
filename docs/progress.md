@@ -220,3 +220,12 @@ Prueba en navegador local: propuesta café $850 → consentimiento/aprobación �
 Runtime propio work/web-runtime, DB privada separada de operaciones bancarias/receptor, migraciones al iniciar sin reset. Servidor loopback 3002 activo por autorización G6; launcher web:up reutilizó la URL sin otro servidor. Incidencia operativa: señal de parada inicial restringida por permisos; reinicio del proceso propio permitido por revisión de aprobación. No se alteró el túnel/receptor pey. Helper Abrir-AgentPay.command preparado.
 
 Cero nuevas llamadas a OpenAI/pey, cero dinero real, sin publicación externa. G6 aprobado para demo local, no producción ni operación real desde navegador. PEY-001/002 siguen guardados. G7 no iniciado. Código/guías y ZIP sin configuración privada; commit local, sin push remoto.
+
+
+## Revisión y mejoras posteriores a G6 — 2026-11-07
+
+Autorización: «revisa todo lo que llevamos hasta ahora y evalua mejoras y hazlas». Se revisaron fronteras core/API/DB/adaptadores/BFF/cliente, evidencia y roadmap. Hallazgos corregidos: reserva retenida al cambiar propuesta; recuperación incompleta del cliente ante acuse perdido; sessionStorage bloqueado; bootstrap con query string y validación estricta del perfil ficticio. Nueva ruta POST /v1/proposals/:id/release, dueño/idempotencia/transacción, sin liberar órdenes aprobadas/pagos. Recuperación explícita conserva clave/cuerpo originales y consulta primero; no reintenta POST upstream.
+
+Baseline 346/346; suite focalizada 25/25; suite completa final **357/357 en 17 archivos (27.77 s)**. Typecheck y sintaxis JS aprobados. demo:agent y demo:pey:recovery aprobadas con fixtures, cero OpenAI/pey reales. Once regresiones nuevas cubren concurrencia aprobación/liberación, identidad/cuerpos, snapshots/evidencia preservados, replay de solicitud aun pagada, sesión, caída de red antes/después del commit, caché financiera y almacenamiento bloqueado. Sin nuevas dependencias o migraciones.
+
+Navegador Chrome: propuesta → cambio → propuesta → cambio, edición recuperada; sin aprobación/solicitud nueva. Screenshot sanitizado en outputs/AgentPay-Revision-G6.png. Reiniciada únicamente demo propia en 3002 con DB preservada; receptor/túnel pey no alterados. Docs/AGENTS/roadmap principal corregidos para distinguir estado actual e histórico. Informe docs/revision-2026-11-07.md registra límites adicionales (catálogo/vigencia, almacenamiento, sesiones, evaluación real del modelo, G7). PEY-001/002 abiertos. No publicación ni dinero real. Commit local y paquete de archivos versionados sin secretos/DBs/work.

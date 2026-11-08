@@ -8,7 +8,7 @@ const errors={INVALID_REQUEST:'Revisa los datos del formulario.',AGENT_RUN_IN_PR
 let stored={};try{stored=JSON.parse(sessionStorage.getItem('agentpay-ui')||'{}');}catch{}
 let state={role:'BUYER',csrf:'',proposal:null,order:null,orderId:null,requestStarted:false,runKey:null,runSignature:null,orderKey:null,paymentKey:null,lastAttemptId:null,...stored,payment:null};
 let busy=false,polling=false;
-function save(){const {csrf,role,payment,...safe}=state;sessionStorage.setItem('agentpay-ui',JSON.stringify(safe));}
+function save(){const {csrf,role,payment,...safe}=state;try{sessionStorage.setItem('agentpay-ui',JSON.stringify(safe));}catch{notice('El navegador no permite guardar esta compra. Mantén esta pestaña abierta para conservar el estado de la operación.');}}
 function show(id,visible){$(id).classList.toggle('hidden',!visible);}
 function notice(message){$('global-error').textContent=message;show('global-error',Boolean(message));}
 function node(tag,text,className){const el=document.createElement(tag);if(text!==undefined)el.textContent=text;if(className)el.className=className;return el;}
@@ -29,9 +29,11 @@ function render(){
  const attempted=Boolean(state.requestStarted||state.payment?.attempts?.length);
  show('request-payment-area',!attempted);show('waiting-area',attempted&&!paid);show('paid-result',paid);
  $('payment-button').disabled=busy||!$('payment-check').checked||attempted;
- $('payment-title').textContent=paid?'Pago verificado':attempted?'Solicitud registrada':'Pedido aprobado';$('payment-tag').textContent=paid?'SIMULADO · Confirmado':attempted?'SIMULADO · Pendiente':'Sin pago';
- $('payment-message').textContent=paid?'La confirmación proviene del backend. El comercio ya puede consultar el pedido.':attempted?'El envío de la solicitud no confirma un pago. Puedes consultar su estado sin volver a enviarla.':'Revisa el importe y confirma si quieres solicitar el CoDi simulado.';
  const attempt=state.payment?.attempts?.at(-1);
+ $('payment-title').textContent=paid?'Pago verificado':attempted?(attempt?'Solicitud registrada':'Solicitud por verificar'):'Pedido aprobado';$('payment-tag').textContent=paid?'SIMULADO · Confirmado':attempted?'SIMULADO · Pendiente':'Sin pago';
+ $('payment-message').textContent=paid?'La confirmación proviene del backend. El comercio ya puede consultar el pedido.':attempted?'El envío de la solicitud no confirma un pago. Puedes consultar su estado sin volver a enviarla.':'Revisa el importe y confirma si quieres solicitar el CoDi simulado.';
+ show('recover-payment',attempted&&!attempt&&!paid);$('recover-payment').disabled=busy||!state.paymentKey;show('open-simulator',Boolean(attempt));
+ if(!attempt){$('waiting-title').textContent='Verificando si la solicitud se registró';$('waiting-caption').textContent='Consulta primero. Si no aparece, recupera la misma operación con su clave original.';}
  if(attempt){$('waiting-title').textContent=labels[attempt.status]||'Esperando confirmación';if(attempt.status==='CANCELLED_LOCALLY')$('waiting-caption').textContent='El backend indica que no se envió. Requiere revisión antes de otro intento.';else $('waiting-caption').textContent='No se volverá a enviar la solicitud automáticamente.';}
  if(paid){$('paid-result').replaceChildren();const panel=node('div',undefined,'paid-panel');panel.append(node('span','✓ Pago simulado confirmado','status-tag'),node('h3',state.payment.fulfillmentStatus==='FULFILLMENT_EXCEPTION'?'El pago llegó. Revisemos la entrega.':'Tu pago quedó confirmado.'),node('p',state.payment.fulfillmentStatus==='FULFILLMENT_EXCEPTION'?'El comercio debe revisar disponibilidad antes de preparar.':`${money(p?.amountMinor??0)} conciliados. ${labels[state.payment.fulfillmentStatus]||'Consulta la vista Comercio para continuar.'}.`));const next=node('button','Preparar otra compra','button secondary');next.addEventListener('click',()=>{state={csrf:state.csrf,role:state.role,timezone:state.timezone,proposal:null,order:null,orderId:null,requestStarted:false,runKey:null,runSignature:null,orderKey:null,paymentKey:null,lastAttemptId:null,payment:null,simulatedThisSession:false};$('request-text').value='';$('approve-check').checked=false;$('payment-check').checked=false;show('clarification',false);show('simulation-result',false);save();render();$('request-text').focus();});panel.append(next);$('paid-result').append(panel);}
  $('simulate-confirm').disabled=busy||!state.lastAttemptId||paid||Boolean(state.simulatedThisSession);
@@ -52,10 +54,21 @@ $('request-form').addEventListener('submit',e=>{e.preventDefault();action(async(
   if(result.status==='NO_ELIGIBLE_OFFER')$('clarification').append(node('p','Las ofertas actuales no cumplen presupuesto, disponibilidad o entrega. Puedes ajustar el pedido o revisarlo con el comercio.'));
  }
 });});
-$('edit-request').addEventListener('click',()=>{if(state.orderId||busy)return;state.proposal=null;state.runKey=null;state.runSignature=null;state.orderKey=null;state.paymentKey=null;$('approve-check').checked=false;save();render();$('request-text').focus();});
+$('edit-request').addEventListener('click',()=>action(async()=>{if(state.orderId||!state.proposal)return;await api(`/proposals/${encodeURIComponent(state.proposal.proposalId)}/release`,'POST',{},'release_'+state.proposal.proposalId);state.proposal=null;state.runKey=null;state.runSignature=null;state.orderKey=null;state.paymentKey=null;$('approve-check').checked=false;save();render();$('request-text').focus();}));
 $('approve-check').addEventListener('change',render);$('payment-check').addEventListener('change',render);
 $('approve-button').addEventListener('click',()=>action(async()=>{if(!$('approve-check').checked||!state.proposal||state.orderId)return;save();const order=await api('/orders','POST',{proposalId:state.proposal.proposalId,snapshotHash:state.proposal.snapshotHash,approved:true},state.orderKey);state.order=order;state.orderId=order.id;save();await loadPayment();await loadAudit();$('payment-card').scrollIntoView({behavior:'smooth',block:'center'});}));
 $('payment-button').addEventListener('click',()=>action(async()=>{if(!$('payment-check').checked||!state.orderId||state.requestStarted)return;state.requestStarted=true;save();render();await api(`/orders/${encodeURIComponent(state.orderId)}/payment-requests`,'POST',{snapshotHash:state.order.snapshotHash,approved:true},state.paymentKey);await loadPayment();await loadAudit();}));
+$('recover-payment').addEventListener('click',()=>action(async()=>{
+ if(!state.orderId||!state.order||!state.paymentKey||!state.requestStarted)return;
+ await loadPayment();
+ if(!state.payment.attempts.length){
+  // Explicit recovery of the original operation. The backend replays persisted acceptance;
+  // an existing/unknown attempt can never cause another gateway submission.
+  await api(`/orders/${encodeURIComponent(state.orderId)}/payment-requests`,'POST',{snapshotHash:state.order.snapshotHash,approved:true},state.paymentKey);
+  await loadPayment();
+ }
+ await loadAudit();
+}));
 $('refresh-payment').addEventListener('click',()=>action(async()=>{await api(`/orders/${encodeURIComponent(state.orderId)}/reconcile`,'POST',{});await loadPayment();await loadAudit();}));
 $('open-simulator').addEventListener('click',()=>action(()=>changeRole('OPERATOR')));
 $('back-to-buy').addEventListener('click',()=>action(()=>changeRole('BUYER')));

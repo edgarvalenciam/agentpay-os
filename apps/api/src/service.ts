@@ -80,6 +80,20 @@ export class CommerceService {
       return {status:snapshot?201:422,body:{id,evaluation,snapshotHash:snapshot?fingerprint(snapshot):null,snapshot:snapshot?summary(snapshot):null}};
     });
   }
+  releaseProposal(actor:Actor,proposalId:string,key:string){
+    buyer(actor);
+    return this.mutate(actor,`POST /v1/proposals/${proposalId}/release`,key,{},async(tx)=>{
+      const proposal=await tx.proposal.findUnique({where:{id:proposalId},include:{order:true,reservation:true}});
+      if(!proposal)missing();
+      await this.ownedIntent(tx,proposal.intentId,actor);
+      // Only an unapproved proposal can be abandoned. Payment/order evidence is never cancelled here.
+      if(proposal.order)throw new ApiError(409,'PROPOSAL_ALREADY_ORDERED');
+      if(!proposal.reservation)throw new ApiError(409,'PROPOSAL_NOT_ELIGIBLE');
+      if(proposal.reservation.status==='CONSUMED')throw new ApiError(409,'RESERVATION_NOT_RELEASABLE');
+      await tx.reservation.updateMany({where:{proposalId,status:'RESERVED'},data:{status:'RELEASED'}});
+      return {status:200,body:{id:proposalId,status:'RELEASED'}};
+    });
+  }
   createOrder(actor:Actor,key:string,input:z.infer<typeof CreateOrderSchema>){
     const buyerId=buyer(actor);
     return this.mutate(actor,'POST /v1/orders',key,input,async(tx,now)=>{

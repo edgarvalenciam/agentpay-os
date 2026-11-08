@@ -58,6 +58,7 @@ export function buildApp(options:{db:UnitOfWork;credentials:Credential[];clock?:
   app.get('/v1/intents/:id/offers',async req=>service.listOffers(actor(req),params(req)));
   app.post('/v1/intents/:id/proposals',async(req,reply)=>{const r=await service.propose(actor(req),params(req),key(req),ProposeSchema.parse(req.body));return reply.code(r.status).send(r.body);});
   app.post('/v1/offers/:id/evaluate',async req=>service.evaluate(actor(req),EvaluateSchema.parse(req.body).intentId,params(req)));
+  app.post('/v1/proposals/:id/release',async(req,reply)=>{z.object({}).strict().parse(req.body);const r=await service.releaseProposal(actor(req),params(req),key(req));return reply.code(r.status).send(r.body);});
   app.post('/v1/orders',async(req,reply)=>{const r=await service.createOrder(actor(req),key(req),CreateOrderSchema.parse(req.body));return reply.code(r.status).send(r.body);});
   app.get('/v1/orders/:id',async req=>service.getOrder(actor(req),params(req)));
   app.post('/v1/orders/:id/preparation',async(req,reply)=>{z.object({}).strict().parse(req.body);const r=await service.startPreparation(actor(req),params(req),key(req));return reply.code(r.status).send(r.body);});

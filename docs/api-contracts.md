@@ -98,3 +98,8 @@ Ruta opcional habilitada solo al configurar el intérprete. Bearer comprador e I
 POST /v1/orders/:id/preparation requiere comercio propietario, Idempotency-Key y cuerpo vacío. Devuelve orden/fulfillmentStatus PREPARING solo después de pago confirmado y disponibilidad conciliada. Comprador: 403; recurso ajeno: 404; no pagado/no listo/excepción: 409 CONFIRMED_PAYMENT_REQUIRED. Replay no crea otra auditoría.
 
 BFF /ui-api expone sesión/rol de demo, propuesta, aprobación, pagos/consulta/registro, comercio y confirmación mock desde operador. Requiere cookie y CSRF para escritura, Host/Origin local exactos, rol correspondiente y rutas fijas. No acepta destinos arbitrarios ni revela Bearer/operator tokens. Perfil simulado solamente; no apto para despliegue público. Ver docs/g6-frontend.md.
+
+
+## Liberar una propuesta sin aprobar
+
+POST /v1/proposals/:id/release: comprador dueño, Idempotency-Key y cuerpo estricto `{}`. Devuelve 200 `{id,status:"RELEASED"}` y libera únicamente una reserva RESERVED de propuesta sin orden; la propuesta/snapshot históricos se conservan. Una reserva ya liberada devuelve éxito sin otro efecto. Un comprador ajeno obtiene 404, comercio 403, propuesta ya aprobada 409 PROPOSAL_ALREADY_ORDERED. Aprobación y liberación concurrentes se serializan: solo una puede tener éxito. Una propuesta liberada no puede aprobarse ni recuperar stock mediante replay de su creación. La operación no cancela órdenes ni solicitudes financieras.
