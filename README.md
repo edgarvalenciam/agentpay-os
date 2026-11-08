@@ -2,6 +2,12 @@
 
 **Estado:** G1–G3 implementados, G5 verificado con fixtures y un caso real, y G6 con interfaz simulada local: core, API local, persistencia SQLite/Prisma, reservas, consentimiento y auditoría. 363 pruebas y TypeScript estricto aprobados. Adaptador pey y conciliación comercial probados con fixtures; pruebas bancarias aisladas QR/Push pagadas. Habilitación comercial real pendiente. G7-D validado para demo local simulada, sin habilitación comercial real. Fecha: 2026-11-07.
 
+## Video de demostración — 3 minutos
+
+[Ver o descargar la demo narrada (MP4 público)](https://github.com/edgarvalenciam/agentpay-os/releases/download/v1.2-demo/AgentPay-OS-v1.2-demo-3min.mp4) · [Video, subtítulos y transcripción](https://github.com/edgarvalenciam/agentpay-os/releases/tag/v1.2-demo)
+
+Full HD, voz sintética en español y subtítulos integrados. Edición de capturas reales del recorrido local, con **SIMULADO** visible durante todo el video. Los diagnósticos bancarios y el caso OpenAI reales anteriores se distinguen de este checkout ficticio. No requiere iniciar sesión para descargar el video. La release conserva el código probado en `7052f16`.
+
 ## Objetivo
 
 Infraestructura B2B2C para comercio iniciado por IA, validado por políticas deterministas y pagado con autorización bancaria mediante pey/CoDi. El MVP implementa el camino **CoDi Push**; la arquitectura prevé CoDi QR y Payment Links, pero no los implementa todavía.

@@ -240,3 +240,16 @@ Suite focalizada 49/49; tras protección de carrera 362/362; final tras aislar c
 Chrome 390×844: presupuesto $800 rechazado sin orden; $1,000 produce $850 elegido, $1,200 rechazado, margen $150 y 14 checks reales; aprobación, solicitud pendiente, recarga, simulación explícita, PAID del backend, una notificación y preparación; registro visible. contentWidth=clientWidth=390. Viewport restaurado, capturas sanitizadas guardadas, demo dejada lista para otra compra conservando historial. Hallazgo cookies compartidas entre puertos corregido antes del cierre y cubierto por regresión. Reinicio inmediato causó EEXIST por cierre previo aún en curso; sin borrar locks, reintento local posterior sano. Solo demos propias reiniciadas; receptor/túnel intactos.
 
 Guion de 3 minutos/preguntas/plan B, matriz y evidencia en docs/concurso-demo-3-minutos.md y docs/g7-demo-validation.md. G7-D verificado para demo local SIMULADO. G7-R comercial/producción no aprobados, PEY-001/002 abiertos. Cero llamadas pagadas OpenAI, cero consultas/cobros pey y cero mensajes externos. Commit local y paquete de fuentes sin secretos; sin push/publicación.
+
+
+## Video de entrega publicado — 2026-11-08
+
+El usuario indicó «Tu haces todo» al preparar la grabación. Se realizó el recorrido en una sesión fixture/mock nueva (3004), capturando intención, bloqueo $800, propuesta $850/$1,000, 14 reglas, aprobación, solicitud pendiente, simulador explícito, confirmación del backend, una notificación, preparación y auditoría. Son capturas reales editadas, no una grabación bancaria en vivo. Narración sintética local en español; no se grabó micrófono ni se usó un servicio pagado.
+
+MP4 H.264/AAC 1920×1080, 25 fps, **180.00 segundos**, doce escenas y cuarenta eventos de subtítulos integrados. Verificación de decodificación completa aprobada y revisión visual de doce muestras, incluyendo corrección de encuadre y textos. Audio audible verificado por niveles (media -15.3 dB, pico -2.3 dB). Sin claves, datos bancarios privados ni capturas del portal. Python/Pillow/FFmpeg en work/video-runtime ignorado; narración con voz local Paulina. Sin dependencias o código transaccional modificados.
+
+Primera exportación presentó desfase de duración y subtítulos por temporización de imágenes estáticas; se corrigió normalización de muestras y generación de frames antes de subtitular. Exportación final: 4,786,352 bytes, SHA-256 `1485c13fd30ce83b47e92163c5c7873f71f785a8d972174871cc191f2db5c698`.
+
+Publicación: release v1.2-demo apuntando a `7052f16820c8c29d8419989f72e119a62fde2229`, primero como borrador, assets verificados por tamaño y digest antes de publicar. Descarga pública anónima y SHA-256 final coincidentes. Video: https://github.com/edgarvalenciam/agentpay-os/releases/download/v1.2-demo/AgentPay-OS-v1.2-demo-3min.mp4. Incluye SRT, portada y transcripción. README enlaza la entrega; código fuente mantiene sus 363 pruebas aprobadas previas (no se repitió la suite por cambios documentales/video).
+
+Borrador de correo a hola@aibuilders.lat actualizado con repo y video verificados, alcance real/SIMULADO y evidencia histórica de un centavo. Correo no enviado ni programado. G7-R comercial, PEY-001/002 y producción siguen pendientes. Cero nuevos cobros, consultas pey o llamadas OpenAI. Capturas originales, herramientas y credenciales permanecen en work/ excluido.
